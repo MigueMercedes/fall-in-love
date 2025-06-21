@@ -7,11 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import {
   Heart,
-  Star,
   MapPin,
   Navigation,
   ExternalLink,
 } from "lucide-react";
+import Image from "next/image";
 
 // TypeScript declarations for Leaflet
 declare global {
@@ -20,7 +20,7 @@ declare global {
   }
 }
 
-type Mission = "welcome" | "memory" | "secret" | "quiz" | "map" | "final";
+type Mission = "welcome" | "memory" | "secret" | "map" | "final";
 
 export default function LoveAdventure() {
   const [currentMission, setCurrentMission] = useState<Mission>("welcome");
@@ -29,7 +29,6 @@ export default function LoveAdventure() {
   const [answers, setAnswers] = useState({
     memory: "",
     secret: "",
-    quiz: { color: "", food: "", emoji: "" },
   });
 
   const [userLocation, setUserLocation] = useState<{
@@ -54,20 +53,18 @@ export default function LoveAdventure() {
   // Target location coordinates (replace with your actual location)
   const targetLocation = {
     // 18.458955973903947, -69.90626174211894  = playa de guibia
-    // 18.51351426883857, -69.86817871061152 = casa
-    lat: 18.51351426883857, // Replace with your actual latitude
-    lng: -69.86817871061152, // Replace with your actual longitude
+    // 18.507095595462847, -69.87034501472638 = casa
+    lat: 18.507095595462847, // Replace with your actual latitude
+    lng: -69.87034501472638, // Replace with your actual longitude
     name: "Nuestro lugar especial ✨", // Replace with the actual place name
     description: "Donde las estrellas brillan más para nosotros 🌟",
   };
 
   const missions = [
     { id: "welcome", title: "Bienvenida", progress: 0 },
-    { id: "map", title: "El Destino de conexión", progress: 20 },
-    { id: "memory", title: "Nuestros Momentos", progress: 40 },
-    { id: "secret", title: "Mensaje Secreto", progress: 60 },
-    { id: "quiz", title: "Amor Nivel Experto", progress: 80 },
-    { id: "gift", title: "Regalo de amor", progress: 90 },
+    { id: "map", title: "El Destino de conexión", progress: 25 },
+    { id: "memory", title: "Nuestros Momentos", progress: 50 },
+    { id: "secret", title: "Mensaje Secreto", progress: 75 },
     { id: "final", title: "Misión Final", progress: 100 },
   ];
 
@@ -592,11 +589,14 @@ export default function LoveAdventure() {
                     className="group relative overflow-hidden rounded-2xl shadow-lg transform hover:scale-105 transition-all duration-500 hover:shadow-2xl"
                   >
                     <div className="aspect-square relative">
-                      <img
+                      <Image
                         src={image.src}
                         alt={image.alt}
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                         loading="lazy"
+                        quality={100}
+                        width={500}
+                        height={500}
                       />
                       {/* Overlay with heart effect */}
                       <div className="absolute inset-0 bg-gradient-to-t from-pink-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
@@ -649,149 +649,10 @@ export default function LoveAdventure() {
               {/* Continue Button */}
               <div className="text-center pt-6">
                 <Button
-                  onClick={() => nextMission("quiz")}
+                  onClick={() => nextMission("final")}
                   className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white px-8 py-3 text-lg rounded-full shadow-lg transform hover:scale-105 transition-all"
                 >
                   Continuar con la aventura 💖
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {showConfetti && <Confetti />}
-      </div>
-    );
-  }
-
-  // Quiz Mission
-  if (currentMission === "quiz") {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-100 via-rose-50 to-pink-200 p-4">
-        <div className="max-w-2xl mx-auto pt-8">
-          <MissionHeader
-            title="Misión 3: Amor Nivel Experto"
-            progress={progress}
-          />
-
-          <Card className="mt-8 border-pink-200 shadow-xl">
-            <CardHeader className="text-center bg-pink-50">
-              <CardTitle className="text-2xl text-pink-800 flex items-center justify-center gap-2">
-                <Star className="text-pink-500" />
-                ¿Me Conoces Bien?
-                <Star className="text-pink-500" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-8 space-y-8">
-              <div className="text-center">
-                <div className="text-4xl mb-4">🧠💕</div>
-                <p className="text-lg text-pink-700 mb-6">
-                  Demuestra qué tan bien me conoces respondiendo estas preguntas
-                </p>
-              </div>
-
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-pink-700 font-medium mb-2">
-                    ¿Cuál es mi color favorito? 🎨
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {["Azul 💙", "Rosa 💗", "Verde 💚", "Morado 💜"].map(
-                      (color) => (
-                        <Button
-                          key={color}
-                          variant={
-                            answers.quiz.color === color ? "default" : "outline"
-                          }
-                          onClick={() =>
-                            setAnswers({
-                              ...answers,
-                              quiz: { ...answers.quiz, color },
-                            })
-                          }
-                          className={
-                            answers.quiz.color === color
-                              ? "bg-pink-500 text-white"
-                              : "border-pink-200 hover:bg-pink-50"
-                          }
-                        >
-                          {color}
-                        </Button>
-                      )
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-pink-700 font-medium mb-2">
-                    ¿Mi comida favorita? 🍕
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {["Pizza 🍕", "Sushi 🍣", "Tacos 🌮", "Pasta 🍝"].map(
-                      (food) => (
-                        <Button
-                          key={food}
-                          variant={
-                            answers.quiz.food === food ? "default" : "outline"
-                          }
-                          onClick={() =>
-                            setAnswers({
-                              ...answers,
-                              quiz: { ...answers.quiz, food },
-                            })
-                          }
-                          className={
-                            answers.quiz.food === food
-                              ? "bg-pink-500 text-white"
-                              : "border-pink-200 hover:bg-pink-50"
-                          }
-                        >
-                          {food}
-                        </Button>
-                      )
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-pink-700 font-medium mb-2">
-                    ¿Mi emoji más usado? 😊
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {["😂", "❤️", "😊", "🤔"].map((emoji) => (
-                      <Button
-                        key={emoji}
-                        variant={
-                          answers.quiz.emoji === emoji ? "default" : "outline"
-                        }
-                        onClick={() =>
-                          setAnswers({
-                            ...answers,
-                            quiz: { ...answers.quiz, emoji },
-                          })
-                        }
-                        className={
-                          answers.quiz.emoji === emoji
-                            ? "bg-pink-500 text-white text-2xl"
-                            : "border-pink-200 hover:bg-pink-50 text-2xl"
-                        }
-                      >
-                        {emoji}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-
-                <Button
-                  onClick={() => nextMission("map")}
-                  disabled={
-                    !answers.quiz.color ||
-                    !answers.quiz.food ||
-                    !answers.quiz.emoji
-                  }
-                  className="w-full bg-pink-500 hover:bg-pink-600 text-white py-3"
-                >
-                  ¡Continuar la aventura! 🚀
                 </Button>
               </div>
             </CardContent>

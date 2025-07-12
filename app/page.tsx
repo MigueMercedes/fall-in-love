@@ -1,12 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Heart, MapPin, Navigation, ExternalLink } from "lucide-react";
+import {
+  ExternalLink,
+  Heart,
+  MapPin,
+  Navigation,
+  Sparkles,
+} from "lucide-react";
 import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 // Removed Socket.IO imports - using HTTP polling instead
 
 // TypeScript declarations for Leaflet
@@ -316,34 +322,36 @@ export default function LoveAdventure() {
       const heartIcon = window.L.divIcon({
         html: `
           <div style="
-            background: linear-gradient(45deg, #ec4899, #f43f5e);
-            width: 40px;
-            height: 40px;
+            background: linear-gradient(135deg, #ff6b9d, #c44569);
+            width: 44px;
+            height: 44px;
             border-radius: 50% 50% 50% 0;
             transform: rotate(-45deg);
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 12px rgba(236, 72, 153, 0.4);
-            animation: heartbeat 1.5s ease-in-out infinite;
+            box-shadow: 0 8px 32px rgba(255, 107, 157, 0.4);
+            animation: heartbeat 2s ease-in-out infinite;
+            border: 3px solid rgba(255, 255, 255, 0.3);
           ">
             <span style="
               color: white;
-              font-size: 16px;
+              font-size: 18px;
               transform: rotate(45deg);
               font-weight: bold;
+              filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
             ">💖</span>
           </div>
           <style>
             @keyframes heartbeat {
               0%, 100% { transform: rotate(-45deg) scale(1); }
-              50% { transform: rotate(-45deg) scale(1.1); }
+              50% { transform: rotate(-45deg) scale(1.15); }
             }
           </style>
         `,
         className: "custom-heart-marker",
-        iconSize: [40, 40],
-        iconAnchor: [20, 35],
+        iconSize: [44, 44],
+        iconAnchor: [22, 38],
       });
 
       // Add target marker
@@ -358,15 +366,21 @@ export default function LoveAdventure() {
       targetMarker
         .bindPopup(
           `
-        <div style="text-align: center; padding: 8px;">
-          <div style="font-size: 20px; margin-bottom: 8px;">✨</div>
-          <div style="font-weight: bold; color: #be185d; margin-bottom: 4px;">
+        <div style="text-align: center; padding: 12px; background: linear-gradient(135deg, #ffeef8, #f8e8ff); border-radius: 16px; border: none;">
+          <div style="font-size: 24px; margin-bottom: 12px; animation: sparkle 2s ease-in-out infinite;">✨</div>
+          <div style="font-weight: bold; color: #8b2635; margin-bottom: 8px; font-size: 16px;">
             ${targetLocation.name}
           </div>
-          <div style="color: #ec4899; font-size: 14px;">
+          <div style="color: #c44569; font-size: 14px; font-style: italic;">
             ${targetLocation.description}
           </div>
         </div>
+        <style>
+          @keyframes sparkle {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(180deg); }
+          }
+        </style>
       `,
           {
             closeButton: false,
@@ -380,17 +394,25 @@ export default function LoveAdventure() {
         const userIcon = window.L.divIcon({
           html: `
             <div style="
-              background: #3b82f6;
-              width: 20px;
-              height: 20px;
+              background: linear-gradient(135deg, #667eea, #764ba2);
+              width: 24px;
+              height: 24px;
               border-radius: 50%;
-              border: 3px solid white;
-              box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+              border: 4px solid rgba(255, 255, 255, 0.9);
+              box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+              animation: pulse 2s infinite;
             "></div>
+            <style>
+              @keyframes pulse {
+                0% { box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4); }
+                50% { box-shadow: 0 4px 16px rgba(102, 126, 234, 0.8), 0 0 0 12px rgba(102, 126, 234, 0.1); }
+                100% { box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4); }
+              }
+            </style>
           `,
           className: "user-location-marker",
-          iconSize: [20, 20],
-          iconAnchor: [10, 10],
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
         });
 
         window.L.marker([userLocation.lat, userLocation.lng], {
@@ -406,10 +428,10 @@ export default function LoveAdventure() {
         ];
 
         window.L.polyline(latlngs, {
-          color: "#ec4899",
-          weight: 3,
-          opacity: 0.7,
-          dashArray: "10, 10",
+          color: "#ff6b9d",
+          weight: 4,
+          opacity: 0.8,
+          dashArray: "12, 8",
         }).addTo(map);
 
         // Fit map to show both points
@@ -426,17 +448,18 @@ export default function LoveAdventure() {
       const style = document.createElement("style");
       style.textContent = `
         .custom-popup .leaflet-popup-content-wrapper {
-          background: linear-gradient(135deg, #fdf2f8, #fce7f3);
-          border: 2px solid #f9a8d4;
-          border-radius: 12px;
-          box-shadow: 0 8px 25px rgba(236, 72, 153, 0.2);
+          background: linear-gradient(135deg, #ffeef8, #f8e8ff);
+          border: 2px solid rgba(255, 107, 157, 0.3);
+          border-radius: 20px;
+          box-shadow: 0 16px 48px rgba(255, 107, 157, 0.2);
+          backdrop-filter: blur(10px);
         }
         .custom-popup .leaflet-popup-tip {
-          background: #fdf2f8;
-          border: 2px solid #f9a8d4;
+          background: linear-gradient(135deg, #ffeef8, #f8e8ff);
+          border: 2px solid rgba(255, 107, 157, 0.3);
         }
         .leaflet-container {
-          border-radius: 12px;
+          border-radius: 20px;
         }
       `;
       document.head.appendChild(style);
@@ -464,25 +487,25 @@ export default function LoveAdventure() {
       const userIcon = window.L.divIcon({
         html: `
           <div style="
-            background: #3b82f6;
-            width: 20px;
-            height: 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
-            border: 3px solid white;
-            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+            border: 4px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
             animation: pulse 2s infinite;
           "></div>
           <style>
             @keyframes pulse {
-              0% { box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4); }
-              50% { box-shadow: 0 2px 8px rgba(59, 130, 246, 0.8), 0 0 0 10px rgba(59, 130, 246, 0.1); }
-              100% { box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4); }
+              0% { box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4); }
+              50% { box-shadow: 0 4px 16px rgba(102, 126, 234, 0.8), 0 0 0 12px rgba(102, 126, 234, 0.1); }
+              100% { box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4); }
             }
           </style>
         `,
         className: "user-location-marker",
-        iconSize: [20, 20],
-        iconAnchor: [10, 10],
+        iconSize: [24, 24],
+        iconAnchor: [12, 12],
       });
 
       window.L.marker([userLocation.lat, userLocation.lng], {
@@ -498,10 +521,10 @@ export default function LoveAdventure() {
       ];
 
       window.L.polyline(latlngs, {
-        color: "#ec4899",
-        weight: 3,
-        opacity: 0.7,
-        dashArray: "10, 10",
+        color: "#ff6b9d",
+        weight: 4,
+        opacity: 0.8,
+        dashArray: "12, 8",
       }).addTo(mapInstanceRef.current);
 
       // Fit map to show both points
@@ -564,22 +587,13 @@ export default function LoveAdventure() {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        // 🔧 TESTING MODE - REMOVE THIS BLOCK FOR PRODUCTION 🔧
-        // Simulate being 60 steps (approximately 45 meters) away from meeting point
-        // Comment out this entire block when ready for real use
-        // const simulatedLat = targetLocation.lat + 0.0004; // ~45 meters north
-        // const simulatedLng = targetLocation.lng + 0.0002; // slight offset east
-        // const userLat = simulatedLat;
-        // const userLng = simulatedLng;
-        // console.log(
-        //   "🧪 TESTING MODE: Simulating location 60 steps away",
-        //   position
-        // );
-        // 🔧 END TESTING MODE 🔧
-
-        // For real use, uncomment these lines and comment out the testing block above:
+        // Using real GPS coordinates
         const userLat = position.coords.latitude;
         const userLng = position.coords.longitude;
+
+        // 🔧 TESTING MODE - Uncomment these lines to simulate being close to target
+        // const userLat = targetLocation.lat + 0.0003; // ~33 meters north
+        // const userLng = targetLocation.lng + 0.0002; // ~15 meters east
 
         setUserLocation({ lat: userLat, lng: userLng });
 
@@ -644,24 +658,36 @@ export default function LoveAdventure() {
   // Welcome Screen
   if (currentMission === "welcome") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-100 via-rose-50 to-pink-200 flex items-center justify-center p-4">
-        <div className="text-center space-y-8 max-w-md">
-          <div className="space-y-4">
-            <div className="text-6xl animate-bounce">💖</div>
-            <h1 className="text-4xl font-bold text-pink-800 leading-tight">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-red-50 flex items-center justify-center p-4 relative overflow-hidden">
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-10 left-10 w-72 h-72 bg-gradient-to-r from-pink-300 to-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
+          <div className="absolute top-32 right-10 w-72 h-72 bg-gradient-to-r from-purple-300 to-red-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
+          <div className="absolute bottom-32 left-32 w-72 h-72 bg-gradient-to-r from-red-300 to-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
+        </div>
+
+        <div className="text-center space-y-10 max-w-md relative z-10">
+          <div className="space-y-6">
+            <div className="relative">
+              <div className="text-8xl animate-bounce mb-4">💖</div>
+              <div className="absolute inset-0 text-8xl animate-pulse opacity-30">
+                ✨
+              </div>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 bg-clip-text text-transparent leading-tight">
               ¡Bienvenida a nuestra pequeña aventura del amor!
             </h1>
-            <p className="text-lg text-pink-600">
-              Cada misión sera una experiencia. ¿Te animas? ✨
+            <p className="text-xl text-gray-600 font-medium">
+              Cada misión será una experiencia única. ¿Te animas? ✨
             </p>
           </div>
 
-          <div className="space-y-4">
-            <div className="flex justify-center space-x-2">
+          <div className="space-y-8">
+            <div className="flex justify-center space-x-4">
               {["💕", "🌸", "✨", "🦋", "💫"].map((emoji, i) => (
                 <span
                   key={i}
-                  className="text-2xl animate-pulse"
+                  className="text-3xl animate-pulse hover:animate-bounce transition-all duration-300 cursor-pointer"
                   style={{ animationDelay: `${i * 0.2}s` }}
                 >
                   {emoji}
@@ -671,14 +697,16 @@ export default function LoveAdventure() {
 
             <Button
               onClick={() => nextMission("memory")}
-              className="bg-pink-500 hover:bg-pink-600 text-white px-8 py-3 text-lg rounded-full shadow-lg transform hover:scale-105 transition-all"
+              className="bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 hover:from-purple-600 hover:via-pink-600 hover:to-red-600 text-white px-10 py-4 text-xl font-semibold rounded-full shadow-2xl transform hover:scale-105 transition-all duration-300 backdrop-blur-sm border border-white/20"
             >
+              <Sparkles className="mr-2 h-5 w-5" />
               Empezar la aventura 💝
             </Button>
           </div>
         </div>
 
         {showConfetti && <Confetti />}
+        <FloatingHearts />
       </div>
     );
   }
@@ -709,8 +737,14 @@ export default function LoveAdventure() {
     };
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-100 via-rose-50 to-pink-200 p-4">
-        <div className="max-w-2xl mx-auto pt-8">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-red-50 p-4 relative overflow-hidden">
+        {/* Animated Background */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-20 left-20 w-64 h-64 bg-gradient-to-r from-pink-300 to-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
+          <div className="absolute bottom-20 right-20 w-64 h-64 bg-gradient-to-r from-purple-300 to-red-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
+        </div>
+
+        <div className="max-w-2xl mx-auto pt-8 relative z-10">
           <MissionHeader
             title="Misión 1: Nuestros Momentos"
             progress={progress}
@@ -718,25 +752,30 @@ export default function LoveAdventure() {
             socketError={socketError}
           />
 
-          <Card className="mt-8 border-pink-200 shadow-xl">
-            <CardHeader className="text-center bg-pink-50">
-              <CardTitle className="text-2xl text-pink-800 flex items-center justify-center gap-2">
-                <Heart className="text-pink-500" />
+          <Card className="mt-8 backdrop-blur-md bg-white/70 border-white/20 shadow-2xl border-2">
+            <CardHeader className="text-center bg-gradient-to-r from-purple-100/80 via-pink-100/80 to-red-100/80 backdrop-blur-sm">
+              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 bg-clip-text text-transparent flex items-center justify-center gap-3">
+                <Heart className="text-pink-500 h-8 w-8" />
                 Memoria de nuestra primera cita
-                <Heart className="text-pink-500" />
+                <Heart className="text-pink-500 h-8 w-8" />
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-8 space-y-6">
+            <CardContent className="p-8 space-y-8">
               {!mission1ShowResult ? (
                 <>
                   <div className="text-center">
-                    <div className="text-4xl mb-4">📸💕</div>
-                    <p className="text-lg text-pink-700 mb-6">
-                      ¿Recuerdas qué hicimos en nuestra primera cita a solas?
-                    </p>
+                    <div className="text-6xl mb-6 animate-pulse">📸💕</div>
+                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-2xl border-2 border-pink-200/50 backdrop-blur-sm">
+                      <p className="text-xl font-semibold text-gray-700 mb-4">
+                        ¿Recuerdas qué hicimos en nuestra primera cita a solas?
+                      </p>
+                      <p className="text-gray-600">
+                        Elige la respuesta correcta para continuar 💭
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {[
                       "Fuimos al cine 🎬",
                       "Fuimos a la discoteca 💃",
@@ -746,7 +785,7 @@ export default function LoveAdventure() {
                       <Button
                         key={i}
                         variant="outline"
-                        className="w-full p-4 border-pink-200 hover:bg-pink-50 hover:border-pink-300 whitespace-normal break-words"
+                        className="w-full p-6 text-left border-2 border-pink-200/50 hover:border-pink-400 hover:bg-gradient-to-r hover:from-pink-50 hover:to-purple-50 whitespace-normal break-words text-lg font-medium transition-all duration-300 transform hover:scale-[1.02] backdrop-blur-sm bg-white/50"
                         onClick={() => handleAnswerSelect(option)}
                       >
                         {option}
@@ -755,39 +794,39 @@ export default function LoveAdventure() {
                   </div>
                 </>
               ) : (
-                <div className="text-center space-y-6">
+                <div className="text-center space-y-8">
                   {mission1IsCorrect ? (
                     <>
-                      <div className="text-6xl animate-bounce">🎉</div>
-                      <div className="bg-green-50 border-2 border-green-200 p-6 rounded-2xl">
-                        <p className="text-2xl font-bold text-green-700 mb-4">
+                      <div className="text-8xl animate-bounce">🎉</div>
+                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300/50 p-8 rounded-2xl backdrop-blur-sm">
+                        <p className="text-3xl font-bold text-green-700 mb-4">
                           ¡Exacto! 💕
                         </p>
-                        <p className="text-lg text-green-600">
+                        <p className="text-xl text-green-600 mb-4">
                           Ese momento frente al mar fue mágico... 🌊✨
                         </p>
-                        <p className="text-green-600 mt-2">
+                        <p className="text-green-600 font-medium">
                           Preparando la siguiente misión...
                         </p>
                       </div>
                     </>
                   ) : (
                     <>
-                      <div className="text-6xl animate-bounce">🤔</div>
-                      <div className="bg-red-50 border-2 border-red-200 p-6 rounded-2xl">
-                        <p className="text-2xl font-bold text-red-700 mb-4">
+                      <div className="text-8xl animate-bounce">🤔</div>
+                      <div className="bg-gradient-to-r from-red-50 to-pink-50 border-2 border-red-300/50 p-8 rounded-2xl backdrop-blur-sm">
+                        <p className="text-3xl font-bold text-red-700 mb-4">
                           ¡¿Cómo puede ser?! 😱
                         </p>
-                        <p className="text-lg text-red-600 mb-4">
+                        <p className="text-xl text-red-600 mb-4">
                           ¡Waooo! ¿En serio no recuerdas nuestro momento
                           especial frente al mar? 🌊
                         </p>
-                        <p className="text-red-600 mb-4">
+                        <p className="text-red-600 mb-6 font-medium">
                           Te doy una pista: había alcohol de por medio... 🍻
                         </p>
                         <Button
                           onClick={tryAgain}
-                          className="bg-pink-500 hover:bg-pink-600 text-white px-6 py-2 rounded-full"
+                          className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white px-8 py-3 rounded-full font-semibold transform hover:scale-105 transition-all duration-300"
                         >
                           Intentar de nuevo 💭
                         </Button>
@@ -843,8 +882,14 @@ export default function LoveAdventure() {
     ];
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-100 via-rose-50 to-pink-200 p-4">
-        <div className="max-w-4xl mx-auto pt-8">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-red-50 p-4 relative overflow-hidden">
+        {/* Animated Background */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-10 left-10 w-80 h-80 bg-gradient-to-r from-pink-300 to-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
+          <div className="absolute bottom-10 right-10 w-80 h-80 bg-gradient-to-r from-purple-300 to-red-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
+        </div>
+
+        <div className="max-w-6xl mx-auto pt-8 relative z-10">
           <MissionHeader
             title="Misión 2: Nuestros Momentos Especiales"
             progress={progress}
@@ -852,37 +897,37 @@ export default function LoveAdventure() {
             socketError={socketError}
           />
 
-          <Card className="mt-8 border-pink-200 shadow-xl">
-            <CardHeader className="text-center bg-pink-50">
-              <CardTitle className="text-2xl text-pink-800 flex items-center justify-center gap-2">
-                <Heart className="text-pink-500" />
+          <Card className="mt-8 backdrop-blur-md bg-white/70 border-white/20 shadow-2xl border-2">
+            <CardHeader className="text-center bg-gradient-to-r from-purple-100/80 via-pink-100/80 to-red-100/80 backdrop-blur-sm">
+              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 bg-clip-text text-transparent flex items-center justify-center gap-3">
+                <Heart className="text-pink-500 h-8 w-8" />
                 Galería de Recuerdos
-                <Heart className="text-pink-500" />
+                <Heart className="text-pink-500 h-8 w-8" />
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-8 space-y-8">
-              <div className="text-center space-y-4">
-                <div className="text-4xl mb-4">📸💕</div>
-                <div className="bg-gradient-to-r from-pink-50 to-rose-50 p-6 rounded-2xl border-2 border-pink-200">
-                  <p className="text-xl text-pink-700 font-medium leading-relaxed">
+            <CardContent className="p-8 space-y-10">
+              <div className="text-center space-y-6">
+                <div className="text-6xl mb-6 animate-pulse">📸💕</div>
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-8 rounded-2xl border-2 border-pink-200/50 backdrop-blur-sm">
+                  <p className="text-2xl font-bold text-gray-700 leading-relaxed mb-4">
                     Momentos que me han hecho conectar contigo y nunca quiero
                     olvidar
                   </p>
-                  <p className="text-pink-600 mt-2 italic">
+                  <p className="text-gray-600 text-lg mb-4 italic">
                     Hay más pero no suelo tirar fotos hehehe 😅
                   </p>
-                  <p className="text-pink-600 mt-2 font-medium">
+                  <p className="text-gray-700 font-semibold text-lg">
                     👆 Toca cada carta para revelar nuestros recuerdos
                   </p>
                 </div>
               </div>
 
               {/* Flip Cards Gallery */}
-              <div className="grid md:grid-cols-3 gap-6">
+              <div className="grid md:grid-cols-3 gap-8">
                 {cardData.map((card, index) => (
                   <div
                     key={index}
-                    className="relative h-80 cursor-pointer"
+                    className="relative h-96 cursor-pointer group"
                     onClick={() =>
                       !flippedCards[index] && handleCardFlip(index)
                     }
@@ -890,23 +935,28 @@ export default function LoveAdventure() {
                     <div
                       className={`relative w-full h-full transition-transform duration-700 preserve-3d ${
                         flippedCards[index] ? "rotate-y-180" : ""
-                      }`}
+                      } group-hover:scale-105`}
                       style={{
                         transformStyle: "preserve-3d",
                       }}
                     >
                       {/* Card Back (Hidden Memory) */}
-                      <div className="absolute inset-0 w-full h-full backface-hidden rounded-2xl bg-gradient-to-br from-pink-300 to-rose-300 flex items-center justify-center shadow-lg">
-                        <div className="text-center text-white">
-                          <div className="text-4xl mb-4">💖</div>
-                          <p className="text-xl font-bold">{card.title}</p>
-                          <p className="text-sm mt-2">Toca para revelar</p>
+                      <div className="absolute inset-0 w-full h-full backface-hidden rounded-2xl bg-gradient-to-br from-purple-400 via-pink-400 to-red-400 flex items-center justify-center shadow-2xl border-4 border-white/30 backdrop-blur-sm">
+                        <div className="text-center text-white p-6">
+                          <div className="text-6xl mb-6 animate-pulse">💖</div>
+                          <p className="text-2xl font-bold mb-4">
+                            {card.title}
+                          </p>
+                          <p className="text-lg opacity-90">
+                            Toca para revelar
+                          </p>
+                          <div className="mt-4 text-4xl animate-bounce">✨</div>
                         </div>
                       </div>
 
                       {/* Card Front (Revealed Memory) */}
                       <div
-                        className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 rounded-2xl overflow-hidden shadow-lg"
+                        className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 rounded-2xl overflow-hidden shadow-2xl border-4 border-white/30"
                         style={{
                           transform: "rotateY(180deg)",
                         }}
@@ -921,12 +971,12 @@ export default function LoveAdventure() {
                             priority
                             quality={100}
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-pink-900/80 via-transparent to-transparent">
-                            <div className="absolute bottom-4 left-4 right-4 text-center">
-                              <div className="text-white text-2xl animate-pulse mb-2">
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent">
+                            <div className="absolute bottom-6 left-6 right-6 text-center">
+                              <div className="text-white text-4xl animate-pulse mb-4">
                                 💖
                               </div>
-                              <p className="text-white text-sm font-medium">
+                              <p className="text-white text-lg font-semibold leading-relaxed">
                                 {card.caption}
                               </p>
                             </div>
@@ -939,13 +989,13 @@ export default function LoveAdventure() {
               </div>
 
               {/* Continue Button */}
-              <div className="text-center pt-6">
+              <div className="text-center pt-8">
                 <Button
                   onClick={() => nextMission("quiz")}
                   disabled={!mission2CanAdvance}
-                  className={`px-8 py-3 text-lg rounded-full shadow-lg transform transition-all ${
+                  className={`px-12 py-4 text-xl font-semibold rounded-full shadow-2xl transform transition-all duration-300 ${
                     mission2CanAdvance
-                      ? "bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white hover:scale-105"
+                      ? "bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 hover:from-purple-600 hover:via-pink-600 hover:to-red-600 text-white hover:scale-105 border-2 border-white/20"
                       : "bg-gray-300 text-gray-500 cursor-not-allowed"
                   }`}
                 >
@@ -970,6 +1020,29 @@ export default function LoveAdventure() {
           }
           .rotate-y-180 {
             transform: rotateY(180deg);
+          }
+          @keyframes blob {
+            0% {
+              transform: translate(0px, 0px) scale(1);
+            }
+            33% {
+              transform: translate(30px, -50px) scale(1.1);
+            }
+            66% {
+              transform: translate(-20px, 20px) scale(0.9);
+            }
+            100% {
+              transform: translate(0px, 0px) scale(1);
+            }
+          }
+          .animate-blob {
+            animation: blob 7s infinite;
+          }
+          .animation-delay-2000 {
+            animation-delay: 2s;
+          }
+          .animation-delay-4000 {
+            animation-delay: 4s;
           }
         `}</style>
       </div>
@@ -1036,8 +1109,14 @@ export default function LoveAdventure() {
     };
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-100 via-rose-50 to-pink-200 p-4">
-        <div className="max-w-4xl mx-auto pt-8">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-red-50 p-4 relative overflow-hidden">
+        {/* Animated Background */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-10 left-10 w-80 h-80 bg-gradient-to-r from-pink-300 to-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
+          <div className="absolute bottom-10 right-10 w-80 h-80 bg-gradient-to-r from-purple-300 to-red-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
+        </div>
+
+        <div className="max-w-4xl mx-auto pt-8 relative z-10">
           <MissionHeader
             title="Misión 3: Promesas del Corazón"
             progress={progress}
@@ -1045,46 +1124,46 @@ export default function LoveAdventure() {
             socketError={socketError}
           />
 
-          <Card className="mt-8 border-pink-200 shadow-xl">
-            <CardHeader className="text-center bg-pink-50">
-              <CardTitle className="text-2xl text-pink-800 flex items-center justify-center gap-2">
-                <Heart className="text-pink-500" />
+          <Card className="mt-8 backdrop-blur-md bg-white/70 border-white/20 shadow-2xl border-2">
+            <CardHeader className="text-center bg-gradient-to-r from-purple-100/80 via-pink-100/80 to-red-100/80 backdrop-blur-sm">
+              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 bg-clip-text text-transparent flex items-center justify-center gap-3">
+                <Heart className="text-pink-500 h-8 w-8" />
                 Mis Promesas Para Ti
-                <Heart className="text-pink-500" />
+                <Heart className="text-pink-500 h-8 w-8" />
               </CardTitle>
             </CardHeader>
             <CardContent className="p-8 space-y-8">
               {!showPromiseResult ? (
                 <>
-                  <div className="text-center space-y-4">
-                    <div className="text-4xl mb-4">💝</div>
-                    <div className="bg-gradient-to-r from-pink-50 to-rose-50 p-6 rounded-2xl border-2 border-pink-200">
-                      <p className="text-xl text-pink-700 font-medium leading-relaxed mb-2">
+                  <div className="text-center space-y-6">
+                    <div className="text-6xl mb-6 animate-pulse">💝</div>
+                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-8 rounded-2xl border-2 border-pink-200/50 backdrop-blur-sm">
+                      <p className="text-2xl font-bold text-gray-700 leading-relaxed mb-2">
                         Estas son las promesas que quiero hacerte...
                       </p>
-                      <p className="text-pink-600">
+                      <p className="text-gray-600">
                         Selecciona las que más significado tengan para ti ✨
                       </p>
-                      <p className="text-sm text-pink-500 mt-2">
+                      <p className="text-sm text-gray-500 mt-2">
                         (Elige al menos 3 promesas)
                       </p>
                     </div>
                   </div>
 
-                  <div className="grid md:grid-cols-2 gap-4">
+                  <div className="grid md:grid-cols-2 gap-6">
                     {lovePromises.map((promise) => (
                       <div
                         key={promise.id}
                         onClick={() => handlePromiseSelect(promise.id)}
-                        className={`p-6 rounded-2xl border-2 cursor-pointer transition-all duration-300 transform hover:scale-105 ${
+                        className={`p-8 rounded-2xl border-2 cursor-pointer transition-all duration-300 transform hover:scale-105 ${
                           selectedPromises.includes(promise.id)
-                            ? "bg-gradient-to-r from-pink-200 to-rose-200 border-pink-400 shadow-lg"
+                            ? "bg-gradient-to-r from-purple-200 to-pink-200 border-pink-400 shadow-2xl"
                             : "bg-white border-pink-200 hover:border-pink-300 hover:shadow-md"
                         }`}
                       >
-                        <div className="text-center space-y-3">
+                        <div className="text-center space-y-4">
                           <div
-                            className={`text-3xl transition-all duration-300 ${
+                            className={`text-4xl transition-all duration-300 ${
                               selectedPromises.includes(promise.id)
                                 ? "animate-bounce"
                                 : ""
@@ -1092,14 +1171,14 @@ export default function LoveAdventure() {
                           >
                             {promise.emoji}
                           </div>
-                          <h3 className="font-bold text-pink-800 text-lg">
+                          <h3 className="font-bold text-pink-800 text-xl">
                             {promise.description}
                           </h3>
-                          <p className="text-pink-600 text-sm leading-relaxed">
+                          <p className="text-gray-600 text-lg leading-relaxed">
                             {promise.text}
                           </p>
                           {selectedPromises.includes(promise.id) && (
-                            <div className="text-pink-500 text-sm font-medium">
+                            <div className="text-pink-500 text-lg font-medium">
                               ✓ Seleccionada
                             </div>
                           )}
@@ -1109,7 +1188,7 @@ export default function LoveAdventure() {
                   </div>
 
                   <div className="text-center">
-                    <div className="mb-4">
+                    <div className="mb-6">
                       <span className="text-pink-600">
                         Promesas seleccionadas: {selectedPromises.length}/3
                         mínimo
@@ -1118,9 +1197,9 @@ export default function LoveAdventure() {
                     <Button
                       onClick={handleContinue}
                       disabled={selectedPromises.length < 3}
-                      className={`px-8 py-3 text-lg rounded-full shadow-lg transform transition-all ${
+                      className={`px-12 py-4 text-xl font-semibold rounded-full shadow-2xl transform transition-all duration-300 ${
                         selectedPromises.length >= 3
-                          ? "bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white hover:scale-105"
+                          ? "bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 hover:from-purple-600 hover:via-pink-600 hover:to-red-600 text-white hover:scale-105 border-2 border-white/20"
                           : "bg-gray-300 text-gray-500 cursor-not-allowed"
                       }`}
                     >
@@ -1131,13 +1210,13 @@ export default function LoveAdventure() {
                   </div>
                 </>
               ) : (
-                <div className="text-center space-y-6">
-                  <div className="text-6xl animate-pulse">💕</div>
-                  <div className="bg-gradient-to-r from-pink-50 to-rose-50 p-8 rounded-2xl border-2 border-pink-200">
-                    <p className="text-2xl font-bold text-pink-800 mb-4">
+                <div className="text-center space-y-8">
+                  <div className="text-8xl animate-pulse">💕</div>
+                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-10 rounded-2xl border-2 border-pink-200/50 backdrop-blur-sm">
+                    <p className="text-3xl font-bold text-pink-800 mb-4">
                       ¡Gracias por elegir nuestras promesas! 💝
                     </p>
-                    <p className="text-lg text-pink-700 mb-4">
+                    <p className="text-xl text-gray-600 mb-4">
                       Estas promesas vivirán en mi corazón para siempre...
                     </p>
                     <div className="text-pink-600">
@@ -1161,8 +1240,14 @@ export default function LoveAdventure() {
     const isClose = distanceToTarget !== null && distanceToTarget <= 200;
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-100 via-rose-50 to-pink-200 p-4">
-        <div className="max-w-6xl mx-auto pt-8">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-red-50 p-4 relative overflow-hidden">
+        {/* Animated Background */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-10 left-10 w-80 h-80 bg-gradient-to-r from-pink-300 to-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
+          <div className="absolute bottom-10 right-10 w-80 h-80 bg-gradient-to-r from-purple-300 to-red-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
+        </div>
+
+        <div className="max-w-6xl mx-auto pt-8 relative z-10">
           <MissionHeader
             title="Misión 4: El Destino del Corazón"
             progress={progress}
@@ -1170,32 +1255,32 @@ export default function LoveAdventure() {
             socketError={socketError}
           />
 
-          <div className="grid lg:grid-cols-2 gap-6 mt-8">
+          <div className="grid lg:grid-cols-2 gap-8 mt-8">
             {/* Instructions Card */}
-            <Card className="border-pink-200 shadow-xl">
-              <CardHeader className="text-center bg-pink-50">
-                <CardTitle className="text-2xl text-pink-800 flex items-center justify-center gap-2">
-                  <MapPin className="text-pink-500" />
+            <Card className="border-white/20 shadow-2xl backdrop-blur-md bg-white/70 border-2">
+              <CardHeader className="text-center bg-gradient-to-r from-purple-100/80 via-pink-100/80 to-red-100/80 backdrop-blur-sm">
+                <CardTitle className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 bg-clip-text text-transparent flex items-center justify-center gap-3">
+                  <MapPin className="text-pink-500 h-8 w-8" />
                   Encuentra el Lugar Especial
-                  <MapPin className="text-pink-500" />
+                  <MapPin className="text-pink-500 h-8 w-8" />
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6 space-y-6">
+              <CardContent className="p-8 space-y-8">
                 <div className="text-center">
-                  <div className="text-4xl mb-4">🗺️✨</div>
-                  <p className="text-lg text-pink-700 mb-4">
+                  <div className="text-6xl mb-6 animate-pulse">🗺️✨</div>
+                  <p className="text-xl text-gray-700 mb-4">
                     Es hora de encontrar nuestro lugar especial...
                   </p>
                 </div>
 
-                <div className="bg-gradient-to-r from-pink-50 to-rose-50 p-4 rounded-lg border-2 border-pink-200">
-                  <div className="text-center space-y-3">
-                    <div className="text-2xl">🌟</div>
-                    <p className="text-lg font-medium text-pink-800">
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-2xl border-2 border-pink-200/50 backdrop-blur-sm">
+                  <div className="text-center space-y-4">
+                    <div className="text-3xl">🌟</div>
+                    <p className="text-lg font-semibold text-gray-700">
                       &ldquo;Donde las estrellas brillan más para
                       nosotros&rdquo;
                     </p>
-                    <p className="text-pink-600 text-sm">
+                    <p className="text-gray-600 text-sm">
                       Ese lugar donde compartimos el momento más mágico bajo el
                       cielo nocturno...
                     </p>
@@ -1204,9 +1289,9 @@ export default function LoveAdventure() {
 
                 {/* Found Message */}
                 {mission4ShowFound && (
-                  <div className="bg-green-50 border-2 border-green-200 p-6 rounded-2xl text-center">
-                    <div className="text-4xl mb-4">🎉</div>
-                    <p className="text-2xl font-bold text-green-700 mb-2">
+                  <div className="bg-green-50 border-2 border-green-200 p-8 rounded-2xl text-center backdrop-blur-sm">
+                    <div className="text-6xl mb-6 animate-pulse">🎉</div>
+                    <p className="text-3xl font-bold text-green-700 mb-2">
                       ¡Me has encontrado! 💕
                     </p>
                     <p className="text-green-600">
@@ -1218,7 +1303,7 @@ export default function LoveAdventure() {
                 {/* Location Status */}
                 {distanceToTarget !== null && !mission4ShowFound && (
                   <div
-                    className={`p-4 rounded-lg text-center ${
+                    className={`p-6 rounded-2xl text-center ${
                       isAtLocation
                         ? "bg-green-50 border-2 border-green-200"
                         : isClose
@@ -1227,9 +1312,9 @@ export default function LoveAdventure() {
                     }`}
                   >
                     {isAtLocation ? (
-                      <div className="space-y-2">
-                        <div className="text-2xl">🎯</div>
-                        <p className="text-green-700 font-medium">
+                      <div className="space-y-3">
+                        <div className="text-3xl">🎯</div>
+                        <p className="text-green-700 font-semibold">
                           ¡Perfecto! Estás muy cerca
                         </p>
                         <p className="text-green-600">
@@ -1237,9 +1322,9 @@ export default function LoveAdventure() {
                         </p>
                       </div>
                     ) : isClose ? (
-                      <div className="space-y-2">
-                        <div className="text-2xl">🚶‍♀️</div>
-                        <p className="text-yellow-700 font-medium">
+                      <div className="space-y-3">
+                        <div className="text-3xl">🚶‍♀️</div>
+                        <p className="text-yellow-700 font-semibold">
                           ¡Muy cerca! Estás a {distanceToTarget}m
                         </p>
                         <p className="text-yellow-600">
@@ -1247,9 +1332,9 @@ export default function LoveAdventure() {
                         </p>
                       </div>
                     ) : (
-                      <div className="space-y-2">
-                        <div className="text-2xl">🧭</div>
-                        <p className="text-red-700 font-medium">
+                      <div className="space-y-3">
+                        <div className="text-3xl">🧭</div>
+                        <p className="text-red-700 font-semibold">
                           Estás a {distanceToTarget}m del lugar
                         </p>
                         <p className="text-red-600">
@@ -1262,22 +1347,22 @@ export default function LoveAdventure() {
 
                 {/* Location Error */}
                 {locationError && (
-                  <div className="bg-red-50 border-2 border-red-200 p-4 rounded-lg text-center">
-                    <div className="text-2xl mb-2">😔</div>
+                  <div className="bg-red-50 border-2 border-red-200 p-6 rounded-2xl text-center backdrop-blur-sm">
+                    <div className="text-3xl mb-2">😔</div>
                     <p className="text-red-700">{locationError}</p>
                   </div>
                 )}
 
                 {/* Action Buttons */}
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {mission4ShowFound ? (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       <Button
                         onClick={() => nextMission("final")}
                         disabled={!isSocketConnected}
-                        className={`w-full py-3 text-lg rounded-full shadow-lg transform transition-all ${
+                        className={`w-full py-4 text-xl font-semibold rounded-full shadow-2xl transform transition-all duration-300 ${
                           isSocketConnected
-                            ? "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white hover:scale-105"
+                            ? "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white hover:scale-105 border-2 border-white/20"
                             : "bg-gray-300 text-gray-500 cursor-not-allowed"
                         }`}
                       >
@@ -1285,7 +1370,7 @@ export default function LoveAdventure() {
                       </Button>
 
                       {!isSocketConnected && (
-                        <div className="text-center text-red-600 text-sm">
+                        <div className="text-center text-red-600 text-lg">
                           <p>⚠️ Necesitas conexión al monitor para continuar</p>
                           <p>
                             La misión final requiere supervisión del
@@ -1298,11 +1383,11 @@ export default function LoveAdventure() {
                     <Button
                       onClick={checkLocation}
                       disabled={isCheckingLocation}
-                      className="w-full py-3 text-lg bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white"
+                      className="w-full py-4 text-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-full shadow-2xl transform transition-all duration-300 border-2 border-white/20"
                     >
                       {isCheckingLocation ? (
-                        <span className="flex items-center justify-center gap-2">
-                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                        <span className="flex items-center justify-center gap-3">
+                          <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
                           Verificando ubicación...
                         </span>
                       ) : (
@@ -1311,29 +1396,29 @@ export default function LoveAdventure() {
                     </Button>
                   )}
 
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-3">
                     <Button
                       onClick={openInGoogleMaps}
                       variant="outline"
-                      className="py-3 border-pink-200 text-pink-600 hover:bg-pink-50"
+                      className="py-4 border-pink-200 text-pink-600 hover:bg-pink-50 rounded-full shadow-md transform transition-all duration-300 border-2 border-white/20"
                     >
-                      <Navigation className="w-4 h-4 mr-2" />
+                      <Navigation className="w-5 h-5 mr-2" />
                       Google Maps
                     </Button>
                     <Button
                       onClick={openInAppleMaps}
                       variant="outline"
-                      className="py-3 border-pink-200 text-pink-600 hover:bg-pink-50"
+                      className="py-4 border-pink-200 text-pink-600 hover:bg-pink-50 rounded-full shadow-md transform transition-all duration-300 border-2 border-white/20"
                     >
-                      <ExternalLink className="w-4 h-4 mr-2" />
+                      <ExternalLink className="w-5 h-5 mr-2" />
                       Apple Maps
                     </Button>
                   </div>
                 </div>
 
-                <div className="text-center text-sm text-pink-600 space-y-1">
+                <div className="text-center text-lg text-gray-600 space-y-2">
                   <p>Debes estar físicamente en el lugar para continuar 🥰</p>
-                  <p className="text-xs">
+                  <p className="text-sm">
                     Necesitas estar dentro de 50 metros del lugar especial
                   </p>
                 </div>
@@ -1341,9 +1426,9 @@ export default function LoveAdventure() {
             </Card>
 
             {/* Map Card */}
-            <Card className="border-pink-200 shadow-xl">
-              <CardHeader className="text-center bg-pink-50">
-                <CardTitle className="text-xl text-pink-800 flex items-center justify-center gap-2">
+            <Card className="border-white/20 shadow-2xl backdrop-blur-md bg-white/70 border-2">
+              <CardHeader className="text-center bg-gradient-to-r from-purple-100/80 via-pink-100/80 to-red-100/80 backdrop-blur-sm">
+                <CardTitle className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 bg-clip-text text-transparent flex items-center justify-center gap-2">
                   🗺️ Tu Destino de Amor
                 </CardTitle>
               </CardHeader>
@@ -1370,16 +1455,16 @@ export default function LoveAdventure() {
 
                   {/* Distance Indicator */}
                   {userLocation && distanceToTarget !== null && mapLoaded && (
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <div className="bg-white/95 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-pink-200">
-                        <div className="flex items-center justify-between text-sm">
-                          <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                    <div className="absolute bottom-6 left-6 right-6">
+                      <div className="bg-white/95 backdrop-blur-sm p-4 rounded-2xl shadow-lg border border-pink-200/50">
+                        <div className="flex items-center justify-between text-lg">
+                          <div className="flex items-center gap-3">
+                            <div className="w-4 h-4 bg-blue-500 rounded-full animate-pulse"></div>
                             <span className="text-pink-700">Tu ubicación</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 bg-pink-500 rounded-full animate-pulse"></div>
-                            <span className="font-medium text-pink-800">
+                          <div className="flex items-center gap-3">
+                            <div className="w-4 h-4 bg-pink-500 rounded-full animate-pulse"></div>
+                            <span className="font-semibold text-pink-800">
                               {distanceToTarget}m de distancia
                             </span>
                           </div>
@@ -1401,16 +1486,22 @@ export default function LoveAdventure() {
   // Final Mission
   if (currentMission === "final") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-200 via-rose-100 to-pink-300 flex items-center justify-center p-4">
-        <div className="text-center space-y-8 max-w-md">
+      <div className="min-h-screen bg-gradient-to-br from-purple-200 via-pink-100 to-red-300 flex items-center justify-center p-4 relative overflow-hidden">
+        {/* Animated Background */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-10 left-10 w-96 h-96 bg-gradient-to-r from-pink-300 to-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
+          <div className="absolute bottom-10 right-10 w-96 h-96 bg-gradient-to-r from-purple-300 to-red-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
+        </div>
+
+        <div className="text-center space-y-10 max-w-md relative z-10">
           {!showFinalResponse ? (
             <>
-              <div className="space-y-6">
-                <div className="text-8xl animate-pulse">💖</div>
+              <div className="space-y-8">
+                <div className="text-10xl animate-pulse">💖</div>
 
                 {/* Interactive Messages */}
                 <div
-                  className="space-y-4 cursor-pointer"
+                  className="space-y-6 cursor-pointer"
                   onClick={handleScreenTap}
                 >
                   {finalMessages
@@ -1418,7 +1509,7 @@ export default function LoveAdventure() {
                     .map((message, index) => (
                       <div
                         key={index}
-                        className={`text-2xl font-bold text-pink-800 transition-all duration-1000 ${
+                        className={`text-3xl font-bold text-pink-800 transition-all duration-1000 ${
                           index === currentMessageIndex ? "animate-pulse" : ""
                         }`}
                       >
@@ -1429,7 +1520,7 @@ export default function LoveAdventure() {
                   {/* Tap instruction */}
                   {currentMessageIndex < finalMessages.length - 1 &&
                     !showFinalQuestion && (
-                      <div className="text-sm text-pink-600 mt-4 animate-bounce">
+                      <div className="text-lg text-gray-600 mt-6 animate-bounce">
                         👆 Toca la pantalla para continuar
                       </div>
                     )}
@@ -1437,10 +1528,10 @@ export default function LoveAdventure() {
 
                 {/* Socket Error Display */}
                 {socketError && (
-                  <div className="bg-red-50 border-2 border-red-200 p-4 rounded-2xl text-center">
-                    <div className="text-2xl mb-2">⚠️</div>
-                    <p className="text-red-700 font-medium">{socketError}</p>
-                    <p className="text-red-600 text-sm mt-2">
+                  <div className="bg-red-50 border-2 border-red-200 p-6 rounded-2xl text-center backdrop-blur-sm">
+                    <div className="text-3xl mb-2">⚠️</div>
+                    <p className="text-red-700 font-semibold">{socketError}</p>
+                    <p className="text-red-600 text-lg mt-2">
                       Contacta al administrador para resolver este problema.
                     </p>
                   </div>
@@ -1448,15 +1539,15 @@ export default function LoveAdventure() {
 
                 {/* Found Question */}
                 {showFinalQuestion && currentMessageIndex === 3 && (
-                  <div className="bg-white/50 backdrop-blur-sm p-6 rounded-2xl border-2 border-pink-300 shadow-xl space-y-6">
+                  <div className="bg-white/50 backdrop-blur-sm p-8 rounded-2xl border-2 border-pink-300 shadow-2xl space-y-8">
                     {!waitingForAdmin ? (
                       <>
-                        <div className="flex justify-center space-x-2">
+                        <div className="flex justify-center space-x-3">
                           {["💕", "🌸", "✨", "🦋", "💫", "🌟", "💖"].map(
                             (emoji, i) => (
                               <span
                                 key={i}
-                                className="text-2xl animate-bounce"
+                                className="text-3xl animate-bounce"
                                 style={{ animationDelay: `${i * 0.1}s` }}
                               >
                                 {emoji}
@@ -1465,22 +1556,22 @@ export default function LoveAdventure() {
                           )}
                         </div>
 
-                        <div className="space-y-4">
-                          <p className="text-xl font-bold text-pink-800">
+                        <div className="space-y-6">
+                          <p className="text-2xl font-bold text-pink-800">
                             ¿Me encontraste?
                           </p>
 
                           {/* Connection Status */}
-                          <div className="text-sm text-center">
+                          {/* <div className="text-lg text-center">
                             <span
-                              className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+                              className={`inline-flex items-center gap-3 px-4 py-2 rounded-full text-sm font-medium ${
                                 isSocketConnected
                                   ? "bg-green-100 text-green-700"
                                   : "bg-red-100 text-red-700"
                               }`}
                             >
                               <div
-                                className={`w-2 h-2 rounded-full ${
+                                className={`w-3 h-3 rounded-full ${
                                   isSocketConnected
                                     ? "bg-green-500"
                                     : "bg-red-500"
@@ -1490,12 +1581,12 @@ export default function LoveAdventure() {
                                 ? "Conectado al monitor"
                                 : "Sin conexión al monitor"}
                             </span>
-                          </div>
+                          </div> */}
 
-                          <div className="flex gap-4 justify-center">
+                          <div className="flex gap-6 justify-center">
                             <Button
                               onClick={() => handleFoundResponse(true)}
-                              className="bg-green-500 hover:bg-green-600 text-white px-8 py-3 text-lg rounded-full shadow-lg transform hover:scale-105 transition-all"
+                              className="bg-green-500 hover:bg-green-600 text-white px-10 py-4 text-xl font-semibold rounded-full shadow-2xl transform hover:scale-105 transition-all duration-300 border-2 border-white/20"
                             >
                               ¡Sí! 💖
                             </Button>
@@ -1503,9 +1594,9 @@ export default function LoveAdventure() {
                             <Button
                               onClick={() => handleFoundResponse(false)}
                               disabled={!isSocketConnected}
-                              className={`px-8 py-3 text-lg rounded-full shadow-lg transform transition-all ${
+                              className={`px-10 py-4 text-xl font-semibold rounded-full shadow-2xl transform transition-all duration-300 ${
                                 isSocketConnected
-                                  ? "bg-orange-500 hover:bg-orange-600 text-white hover:scale-105"
+                                  ? "bg-orange-500 hover:bg-orange-600 text-white hover:scale-105 border-2 border-white/20"
                                   : "bg-gray-300 text-gray-500 cursor-not-allowed"
                               }`}
                             >
@@ -1514,7 +1605,7 @@ export default function LoveAdventure() {
                           </div>
 
                           {!isSocketConnected && (
-                            <div className="text-center text-red-600 text-sm">
+                            <div className="text-center text-red-600 text-lg">
                               <p>⚠️ Sin conexión al servidor de monitoreo</p>
                               <p>
                                 No se puede esperar aprobación del administrador
@@ -1524,20 +1615,20 @@ export default function LoveAdventure() {
                         </div>
                       </>
                     ) : (
-                      <div className="text-center space-y-4">
-                        <div className="text-4xl animate-pulse">⏳</div>
-                        <p className="text-xl font-bold text-pink-800">
+                      <div className="text-center space-y-6">
+                        <div className="text-6xl animate-pulse">⏳</div>
+                        <p className="text-2xl font-bold text-pink-800">
                           Esperando confirmación...
                         </p>
-                        <p className="text-pink-600">
+                        <p className="text-gray-600">
                           Sigue buscando, cuando me encuentres podrás continuar
                           💕
                         </p>
-                        <div className="flex justify-center space-x-1">
+                        <div className="flex justify-center space-x-2">
                           {Array.from({ length: 3 }).map((_, i) => (
                             <div
                               key={i}
-                              className="w-2 h-2 bg-pink-500 rounded-full animate-bounce"
+                              className="w-3 h-3 bg-pink-500 rounded-full animate-bounce"
                               style={{ animationDelay: `${i * 0.2}s` }}
                             ></div>
                           ))}
@@ -1549,13 +1640,13 @@ export default function LoveAdventure() {
 
                 {/* Final Question with Buttons */}
                 {currentMessageIndex === finalMessages.length - 1 && (
-                  <div className="bg-white/50 backdrop-blur-sm p-6 rounded-2xl border-2 border-pink-300 shadow-xl space-y-6">
-                    <div className="flex justify-center space-x-2">
+                  <div className="bg-white/50 backdrop-blur-sm p-8 rounded-2xl border-2 border-pink-300 shadow-2xl space-y-8">
+                    <div className="flex justify-center space-x-3">
                       {["💕", "🌸", "✨", "🦋", "💫", "🌟", "💖"].map(
                         (emoji, i) => (
                           <span
                             key={i}
-                            className="text-2xl animate-bounce"
+                            className="text-3xl animate-bounce"
                             style={{ animationDelay: `${i * 0.1}s` }}
                           >
                             {emoji}
@@ -1564,22 +1655,22 @@ export default function LoveAdventure() {
                       )}
                     </div>
 
-                    <div className="space-y-4">
-                      <p className="text-3xl font-bold text-pink-800">
+                    <div className="space-y-6">
+                      <p className="text-4xl font-bold text-pink-800">
                         ¿Aceptarías ser mi novia?
                       </p>
 
-                      <div className="flex gap-4 justify-center">
+                      <div className="flex gap-6 justify-center">
                         <Button
                           onClick={() => handleFinalAnswer("accepted")}
-                          className="bg-green-500 hover:bg-green-600 text-white px-8 py-3 text-lg rounded-full shadow-lg transform hover:scale-105 transition-all"
+                          className="bg-green-500 hover:bg-green-600 text-white px-10 py-4 text-xl font-semibold rounded-full shadow-2xl transform hover:scale-105 transition-all duration-300 border-2 border-white/20"
                         >
                           ¡Sí! 💖
                         </Button>
 
                         <Button
                           onClick={() => handleFinalAnswer("rejected")}
-                          className="bg-red-500 hover:bg-red-600 text-white px-8 py-3 text-lg rounded-full shadow-lg transform hover:scale-105 transition-all"
+                          className="bg-red-500 hover:bg-red-600 text-white px-10 py-4 text-xl font-semibold rounded-full shadow-2xl transform hover:scale-105 transition-all duration-300 border-2 border-white/20"
                         >
                           No 😔
                         </Button>
@@ -1589,27 +1680,27 @@ export default function LoveAdventure() {
                 )}
               </div>
 
-              <div className="space-y-4">
-                <div className="text-pink-600 text-lg">
+              <div className="space-y-6">
+                <div className="text-pink-600 text-xl">
                   La aventura más hermosa apenas comienza... 💕
                 </div>
               </div>
             </>
           ) : (
             /* Final Response */
-            <div className="space-y-6">
-              <div className="text-8xl animate-pulse">💖</div>
+            <div className="space-y-8">
+              <div className="text-10xl animate-pulse">💖</div>
 
-              <div className="bg-white/50 backdrop-blur-sm p-6 rounded-2xl border-2 border-pink-300 shadow-xl">
-                <div className="space-y-4">
-                  <p className="text-3xl font-bold text-green-700 mb-4">
+              <div className="bg-white/50 backdrop-blur-sm p-8 rounded-2xl border-2 border-pink-300 shadow-2xl">
+                <div className="space-y-6">
+                  <p className="text-4xl font-bold text-green-700 mb-4">
                     ¡Gracias por decir que sí! 💖
                   </p>
-                  <p className="text-xl text-pink-700">
+                  <p className="text-xl text-gray-600 mb-4">
                     Gracias por brindarme la oportunidad de pasar más tiempo a
                     tu lado. Te prometo dar lo mejor de mi! ¡Te quiero mucho! 💕
                   </p>
-                  <div className="text-4xl animate-bounce">💋</div>
+                  <div className="text-6xl animate-bounce">💋</div>
                 </div>
               </div>
             </div>
@@ -1619,19 +1710,19 @@ export default function LoveAdventure() {
         {/* Modal for "No" button */}
         {showNoModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white p-8 rounded-2xl max-w-md mx-4 shadow-2xl">
-              <div className="text-center space-y-4">
-                <div className="text-4xl">😅</div>
-                <p className="text-xl font-bold text-pink-800">
+            <div className="bg-white p-10 rounded-2xl max-w-md mx-4 shadow-2xl backdrop-blur-sm">
+              <div className="text-center space-y-6">
+                <div className="text-6xl">😅</div>
+                <p className="text-2xl font-bold text-pink-800">
                   ¡Esa opción no es válida!
                 </p>
-                <p className="text-pink-600">
+                <p className="text-gray-600">
                   Jajaja, inténtalo de nuevo... Solo hay una respuesta correcta
                   💕
                 </p>
                 <Button
                   onClick={closeNoModal}
-                  className="bg-pink-500 hover:bg-pink-600 text-white px-6 py-2 rounded-full"
+                  className="bg-pink-500 hover:bg-pink-600 text-white px-8 py-3 rounded-full font-semibold"
                 >
                   Intentar de nuevo 💖
                 </Button>
@@ -1652,7 +1743,7 @@ export default function LoveAdventure() {
 function MissionHeader({
   title,
   progress,
-  isSocketConnected,
+  // isSocketConnected,
   socketError,
 }: {
   title: string;
@@ -1661,40 +1752,40 @@ function MissionHeader({
   socketError?: string | null;
 }) {
   return (
-    <div className="text-center space-y-4">
-      <h1 className="text-3xl font-bold text-pink-800">{title}</h1>
+    <div className="text-center space-y-6">
+      <h1 className="text-4xl font-bold text-pink-800">{title}</h1>
       <div className="max-w-md mx-auto">
         <Progress
           value={progress}
-          className="h-3"
+          className="h-4"
         />
-        <p className="text-pink-600 mt-2">{progress}% completado</p>
+        <p className="text-gray-600 mt-3">{progress}% completado</p>
       </div>
 
       {/* WebSocket Connection Status */}
-      {typeof isSocketConnected !== "undefined" && (
+      {/* {typeof isSocketConnected !== "undefined" && (
         <div className="flex justify-center">
           <span
-            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+            className={`inline-flex items-center gap-3 px-4 py-2 rounded-full text-sm font-medium ${
               isSocketConnected
                 ? "bg-green-100 text-green-700"
                 : "bg-red-100 text-red-700"
             }`}
           >
             <div
-              className={`w-2 h-2 rounded-full ${
+              className={`w-3 h-3 rounded-full ${
                 isSocketConnected ? "bg-green-500" : "bg-red-500"
               }`}
             ></div>
-            {/* {isSocketConnected ? "Monitor conectado" : "Monitor desconectado"} */}
+            {isSocketConnected ? "Monitor conectado" : "Monitor desconectado"}
           </span>
         </div>
-      )}
+      )} */}
 
       {/* Socket Error */}
       {socketError && (
-        <div className="bg-red-50 border border-red-200 p-2 rounded-lg text-center max-w-md mx-auto">
-          <p className="text-red-700 text-sm">{socketError}</p>
+        <div className="bg-red-50 border border-red-200 p-3 rounded-lg text-center max-w-md mx-auto backdrop-blur-sm">
+          <p className="text-red-700 text-lg">{socketError}</p>
         </div>
       )}
     </div>
@@ -1702,53 +1793,120 @@ function MissionHeader({
 }
 
 function Confetti() {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Don't render anything on the server side
+  if (!isClient) {
+    return null;
+  }
+
   return (
     <div className="fixed inset-0 pointer-events-none z-50">
-      {Array.from({ length: 50 }).map((_, i) => (
+      {Array.from({ length: 15 }).map((_, i) => (
         <div
           key={i}
-          className="absolute animate-ping"
+          className="absolute animate-bounce opacity-60"
           style={{
             left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
+            bottom: `-20px`, // Start from bottom of screen
             animationDelay: `${Math.random() * 2}s`,
-            animationDuration: `${1 + Math.random()}s`,
+            animationDuration: `${3 + Math.random() * 2}s`,
+            fontSize: `${1.2 + Math.random() * 0.8}rem`,
+            animation: `floatUp ${4 + Math.random() * 3}s ease-out ${
+              Math.random() * 2
+            }s forwards`,
           }}
         >
-          {["💖", "💕", "🌸", "✨", "🦋"][Math.floor(Math.random() * 5)]}
+          {
+            ["💖", "💕", "💗", "💝", "💘", "💓", "💞", "💟"][
+              Math.floor(Math.random() * 8)
+            ]
+          }
         </div>
       ))}
+
+      {/* CSS for floating up animation */}
+      <style jsx>{`
+        @keyframes floatUp {
+          0% {
+            transform: translateY(0px) rotate(0deg);
+            opacity: 0.8;
+          }
+          50% {
+            opacity: 0.6;
+          }
+          100% {
+            transform: translateY(-100vh) rotate(360deg);
+            opacity: 0;
+          }
+        }
+      `}</style>
     </div>
   );
 }
 
 function FloatingHearts() {
-  // No mostrar los corazones en la pantalla de final
   const missionRef = useRef<HTMLDivElement>(null);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
     if (missionRef.current) {
       missionRef.current.style.zIndex = "0";
     }
   }, []);
 
+  // Don't render anything on the server side
+  if (!isClient) {
+    return null;
+  }
+
   return (
     <div
-      className="fixed inset-0 pointer-events-none"
+      className="fixed inset-0 pointer-events-none z-10"
       ref={missionRef}
     >
-      {Array.from({ length: 10 }).map((_, i) => (
+      {Array.from({ length: 15 }).map((_, i) => (
         <div
           key={i}
-          className="absolute animate-bounce"
+          className="absolute animate-bounce opacity-30"
           style={{
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
-            animationDelay: `${Math.random() * 3}s`,
-            animationDuration: `${2 + Math.random() * 2}s`,
+            animationDelay: `${Math.random() * 5}s`,
+            animationDuration: `${3 + Math.random() * 3}s`,
+            transform: `scale(${0.5 + Math.random() * 0.8})`,
           }}
         >
-          <Heart className="text-pink-500 w-10 h-10 animate-pulse" />
+          <Heart
+            className="text-pink-400 w-8 h-8 animate-pulse"
+            style={{
+              filter: `hue-rotate(${Math.random() * 60}deg) brightness(${
+                0.8 + Math.random() * 0.4
+              })`,
+            }}
+          />
+        </div>
+      ))}
+
+      {/* Sparkles */}
+      {Array.from({ length: 20 }).map((_, i) => (
+        <div
+          key={`sparkle-${i}`}
+          className="absolute animate-ping opacity-20"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            animationDelay: `${Math.random() * 4}s`,
+            animationDuration: `${2 + Math.random() * 2}s`,
+            fontSize: `${0.8 + Math.random() * 1.2}rem`,
+          }}
+        >
+          <Sparkles className="text-purple-400 w-6 h-6" />
         </div>
       ))}
     </div>

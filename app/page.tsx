@@ -5,13 +5,9 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import {
-  Heart,
-  Star,
-  MapPin,
-  Navigation,
-  ExternalLink,
-} from "lucide-react";
+import { Heart, MapPin, Navigation, ExternalLink } from "lucide-react";
+import Image from "next/image";
+// Removed Socket.IO imports - using HTTP polling instead
 
 // TypeScript declarations for Leaflet
 declare global {
@@ -32,6 +28,159 @@ export default function LoveAdventure() {
     quiz: { color: "", food: "", emoji: "" },
   });
 
+  // Mission 1 states
+  const [mission1ShowResult, setMission1ShowResult] = useState(false);
+  const [mission1IsCorrect, setMission1IsCorrect] = useState(false);
+
+  // Mission 2 states (flip cards)
+  const [flippedCards, setFlippedCards] = useState<boolean[]>([
+    false,
+    false,
+    false,
+  ]);
+  const [mission2CanAdvance, setMission2CanAdvance] = useState(false);
+
+  // Mission 3 states (love promises)
+  const [selectedPromises, setSelectedPromises] = useState<string[]>([]);
+  const [showPromiseResult, setShowPromiseResult] = useState(false);
+
+  // Mission 4 states (location)
+  const [mission4ShowFound, setMission4ShowFound] = useState(false);
+
+  // Final mission states
+  const [showFinalQuestion, setShowFinalQuestion] = useState(false);
+  const [showFinalResponse, setShowFinalResponse] = useState(false);
+  const [showNoModal, setShowNoModal] = useState(false);
+  const [finalInteractiveMode, setFinalInteractiveMode] = useState(false);
+  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
+  const [waitingForAdmin, setWaitingForAdmin] = useState(false);
+
+  // Connection state
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
+  const [socketError, setSocketError] = useState<string | null>(null);
+
+  // HTTP polling for monitoring
+  const sendMissionProgress = async (mission: string, progress: number) => {
+    try {
+      await fetch("/api/socket", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "mission-progress",
+          data: { mission, progress },
+        }),
+      });
+    } catch (error) {
+      console.error("Error sending mission progress:", error);
+    }
+  };
+
+  const sendLocationUpdate = async (
+    lat: number,
+    lng: number,
+    distance: number
+  ) => {
+    try {
+      await fetch("/api/socket", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "location-update",
+          data: { lat, lng, distance },
+        }),
+      });
+    } catch (error) {
+      console.error("Error sending location update:", error);
+    }
+  };
+
+  const checkAdvanceApproval = async () => {
+    try {
+      const response = await fetch("/api/socket", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "check-advance",
+          data: {},
+        }),
+      });
+      const result = await response.json();
+      return result.allowAdvance;
+    } catch (error) {
+      console.error("Error checking advance approval:", error);
+      return false;
+    }
+  };
+
+  // Initialize connection check
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const response = await fetch("/api/socket");
+        if (response.ok) {
+          setIsSocketConnected(true);
+          setSocketError(null);
+        } else {
+          setIsSocketConnected(false);
+          setSocketError("No se pudo conectar al servidor de monitoreo");
+        }
+      } catch {
+        setIsSocketConnected(false);
+        setSocketError("Error de conexión al servidor de monitoreo");
+      }
+    };
+
+    checkConnection();
+    const interval = setInterval(checkConnection, 5000); // Check every 5 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Poll for admin approval when waiting
+  useEffect(() => {
+    if (waitingForAdmin) {
+      const pollForApproval = async () => {
+        const approved = await checkAdvanceApproval();
+        if (approved) {
+          setWaitingForAdmin(false);
+          setShowFinalQuestion(false);
+          setCurrentMessageIndex(currentMessageIndex + 1);
+        }
+      };
+
+      const interval = setInterval(pollForApproval, 2000); // Check every 2 seconds
+      return () => clearInterval(interval);
+    }
+  }, [waitingForAdmin, currentMessageIndex]);
+
+  // Debug final mission state
+  useEffect(() => {
+    if (currentMission === "final") {
+      console.log("Final mission state:", {
+        currentMessageIndex,
+        showFinalQuestion,
+        waitingForAdmin,
+        finalInteractiveMode,
+        isSocketConnected,
+      });
+    }
+  }, [
+    currentMission,
+    currentMessageIndex,
+    showFinalQuestion,
+    waitingForAdmin,
+    finalInteractiveMode,
+    isSocketConnected,
+  ]);
+
+  // Target location coordinates (meeting point)
+  const targetLocation = {
+    lat: 18.467997618938792, // Meeting point latitude
+    lng: -69.8481997872944, // Meeting point longitude
+    name: "Nuestro lugar especial ✨", // The meeting place name
+    description: "Donde las estrellas brillan más para nosotros 🌟",
+  };
+
   const [userLocation, setUserLocation] = useState<{
     lat: number;
     lng: number;
@@ -43,42 +192,27 @@ export default function LoveAdventure() {
   const mapRef = useRef<any>(null);
   const mapInstanceRef = useRef<any>(null);
 
-  // Final mission states
-  const [finalMessageIndex, setFinalMessageIndex] = useState(0);
-  const [showFinalQuestion, setShowFinalQuestion] = useState(false);
-  const [finalAnswer, setFinalAnswer] = useState<
-    "accepted" | "rejected" | null
-  >(null);
-  const [showFinalResponse, setShowFinalResponse] = useState(false);
-
-  // Target location coordinates (replace with your actual location)
-  const targetLocation = {
-    // 18.458955973903947, -69.90626174211894  = playa de guibia
-    // 18.51351426883857, -69.86817871061152 = casa
-    lat: 18.51351426883857, // Replace with your actual latitude
-    lng: -69.86817871061152, // Replace with your actual longitude
-    name: "Nuestro lugar especial ✨", // Replace with the actual place name
-    description: "Donde las estrellas brillan más para nosotros 🌟",
-  };
-
   const missions = [
     { id: "welcome", title: "Bienvenida", progress: 0 },
-    { id: "map", title: "El Destino de conexión", progress: 20 },
-    { id: "memory", title: "Nuestros Momentos", progress: 40 },
-    { id: "secret", title: "Mensaje Secreto", progress: 60 },
-    { id: "quiz", title: "Amor Nivel Experto", progress: 80 },
-    { id: "gift", title: "Regalo de amor", progress: 90 },
+    { id: "memory", title: "Nuestros Momentos", progress: 20 },
+    { id: "secret", title: "Nuestros Momentos Especiales", progress: 40 },
+    { id: "quiz", title: "Amor Nivel Experto", progress: 60 },
+    { id: "map", title: "El Destino del Corazón", progress: 80 },
     { id: "final", title: "Misión Final", progress: 100 },
   ];
 
   const finalMessages = [
     "¡Misión Final!",
-    "👀 Mira a tu alrededor...",
+    "Recuerda ese lugar, es el lugar donde nos conocimos realmente...",
+    "👀 Mira a tu alrededor y encuentrame",
+    "¿Me encontraste?",
     "Hemos llegado al final de nuestra aventura",
     "Cada paso, cada risa, cada momento...",
     "Todo nos ha llevado hasta aquí",
     "En este lugar especial, bajo las estrellas...",
-    "❤️ ¿Aceptarías ser mi novia?",
+    "Esa noche en la discoteca...",
+    "Ese brillo que pude observar en tus ojos...",
+    "Te amo Geraldine Santos",
   ];
 
   // Load Leaflet CSS and JS
@@ -107,18 +241,60 @@ export default function LoveAdventure() {
 
   // Handle final mission message delays
   useEffect(() => {
-    if (currentMission === "final") {
-      const timer = setTimeout(() => {
-        if (finalMessageIndex < finalMessages.length - 1) {
-          setFinalMessageIndex(finalMessageIndex + 1);
-        } else {
-          setShowFinalQuestion(true);
-        }
-      }, 2000);
-
-      return () => clearTimeout(timer);
+    if (currentMission === "final" && !finalInteractiveMode) {
+      // Start interactive mode immediately
+      setFinalInteractiveMode(true);
+      setCurrentMessageIndex(0);
     }
-  }, [currentMission, finalMessageIndex]);
+  }, [currentMission, finalInteractiveMode]);
+
+  // Final mission handlers
+  const handleScreenTap = () => {
+    console.log("Screen tapped! Current message index:", currentMessageIndex);
+    if (currentMessageIndex === 3) {
+      // This is the "¿Me encontraste?" message
+      // Show Yes/No buttons
+      console.log("Showing final question buttons");
+      setShowFinalQuestion(true);
+    } else if (currentMessageIndex < finalMessages.length - 1) {
+      console.log("Moving to next message");
+      setCurrentMessageIndex(currentMessageIndex + 1);
+    }
+  };
+
+  const handleFoundResponse = (found: boolean) => {
+    // Check if WebSocket is connected before proceeding
+    if (!isSocketConnected) {
+      setSocketError(
+        "Error: No hay conexión con el servidor de monitoreo. El administrador no podrá aprobar tu avance."
+      );
+      return;
+    }
+
+    // SIEMPRE esperar aprobación del admin, sin importar la respuesta
+    setWaitingForAdmin(true);
+
+    if (found) {
+      // Si dice que sí me encontró, enviar progreso especial para que el admin confirme
+      sendMissionProgress("final", 75); // Progreso especial: dice que me encontró
+    } else {
+      // Si dice que no me encontró, enviar progreso para que el admin sepa que sigue buscando
+      sendMissionProgress("final", 50); // Progreso especial: sigue buscando
+    }
+  };
+
+  const handleFinalAnswer = (answer: "accepted" | "rejected") => {
+    if (answer === "rejected") {
+      setShowNoModal(true);
+    } else {
+      setShowFinalResponse(true);
+      triggerConfetti();
+    }
+  };
+
+  const closeNoModal = () => {
+    setShowNoModal(false);
+  };
 
   // Initialize the map
   const initializeMap = () => {
@@ -347,14 +523,11 @@ export default function LoveAdventure() {
     setTimeout(() => {
       setCurrentMission(mission);
       const missionData = missions.find((m) => m.id === mission);
-      if (missionData) setProgress(missionData.progress);
+      if (missionData) {
+        setProgress(missionData.progress);
+        sendMissionProgress(mission, missionData.progress);
+      }
     }, 1000);
-  };
-
-  const handleFinalAnswer = (answer: "accepted" | "rejected") => {
-    setFinalAnswer(answer);
-    setShowFinalResponse(true);
-    triggerConfetti();
   };
 
   // Calculate distance between two coordinates
@@ -391,6 +564,20 @@ export default function LoveAdventure() {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        // 🔧 TESTING MODE - REMOVE THIS BLOCK FOR PRODUCTION 🔧
+        // Simulate being 60 steps (approximately 45 meters) away from meeting point
+        // Comment out this entire block when ready for real use
+        // const simulatedLat = targetLocation.lat + 0.0004; // ~45 meters north
+        // const simulatedLng = targetLocation.lng + 0.0002; // slight offset east
+        // const userLat = simulatedLat;
+        // const userLng = simulatedLng;
+        // console.log(
+        //   "🧪 TESTING MODE: Simulating location 60 steps away",
+        //   position
+        // );
+        // 🔧 END TESTING MODE 🔧
+
+        // For real use, uncomment these lines and comment out the testing block above:
         const userLat = position.coords.latitude;
         const userLng = position.coords.longitude;
 
@@ -406,11 +593,13 @@ export default function LoveAdventure() {
         setDistanceToTarget(Math.round(distance));
         setIsCheckingLocation(false);
 
-        // Allow access if within 100 meters of target location
-        if (distance <= 100) {
-          setTimeout(() => {
-            nextMission("memory");
-          }, 2000);
+        // Send location update
+        sendLocationUpdate(userLat, userLng, Math.round(distance));
+
+        // Allow access if within 50 meters of target location
+        if (distance <= 50) {
+          setMission4ShowFound(true);
+          triggerConfetti();
         }
       },
       (error) => {
@@ -481,7 +670,7 @@ export default function LoveAdventure() {
             </div>
 
             <Button
-              onClick={() => nextMission("map")}
+              onClick={() => nextMission("memory")}
               className="bg-pink-500 hover:bg-pink-600 text-white px-8 py-3 text-lg rounded-full shadow-lg transform hover:scale-105 transition-all"
             >
               Empezar la aventura 💝
@@ -496,12 +685,37 @@ export default function LoveAdventure() {
 
   // Memory Mission
   if (currentMission === "memory") {
+    const correctAnswer =
+      "Fuimos a hablar frente al mar mientras bebiamos un FourLoko🌊";
+
+    const handleAnswerSelect = (selectedAnswer: string) => {
+      setMission1ShowResult(true);
+
+      if (selectedAnswer === correctAnswer) {
+        setMission1IsCorrect(true);
+        setAnswers({ ...answers, memory: selectedAnswer });
+        triggerConfetti();
+        setTimeout(() => {
+          nextMission("secret");
+        }, 3000);
+      } else {
+        setMission1IsCorrect(false);
+      }
+    };
+
+    const tryAgain = () => {
+      setMission1ShowResult(false);
+      setMission1IsCorrect(false);
+    };
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-100 via-rose-50 to-pink-200 p-4">
         <div className="max-w-2xl mx-auto pt-8">
           <MissionHeader
             title="Misión 1: Nuestros Momentos"
             progress={progress}
+            isSocketConnected={isSocketConnected}
+            socketError={socketError}
           />
 
           <Card className="mt-8 border-pink-200 shadow-xl">
@@ -513,33 +727,75 @@ export default function LoveAdventure() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-8 space-y-6">
-              <div className="text-center">
-                <div className="text-4xl mb-4">📸💕</div>
-                <p className="text-lg text-pink-700 mb-6">
-                  ¿Recuerdas qué hicimos en nuestra primera cita a solas?{" "}
-                </p>
-              </div>
+              {!mission1ShowResult ? (
+                <>
+                  <div className="text-center">
+                    <div className="text-4xl mb-4">📸💕</div>
+                    <p className="text-lg text-pink-700 mb-6">
+                      ¿Recuerdas qué hicimos en nuestra primera cita a solas?
+                    </p>
+                  </div>
 
-              <div className="space-y-3">
-                {[
-                  "Fuimos al cine 🎬",
-                  "Fuimos a la discoteca 💃",
-                  "Fuimos a tomar café y comimos algo rico 🍰",
-                  "Fuimos a a hablar frente al mar mientras bebiamos un FourLoko🌊",
-                ].map((option, i) => (
-                  <Button
-                    key={i}
-                    variant="outline"
-                    className="w-full p-4 border-pink-200 hover:bg-pink-50 hover:border-pink-300 whitespace-normal break-words"
-                    onClick={() => {
-                      setAnswers({ ...answers, memory: option });
-                      nextMission("secret");
-                    }}
-                  >
-                    {option}
-                  </Button>
-                ))}
-              </div>
+                  <div className="space-y-3">
+                    {[
+                      "Fuimos al cine 🎬",
+                      "Fuimos a la discoteca 💃",
+                      "Fuimos a tomar café y comimos algo rico 🍰",
+                      "Fuimos a hablar frente al mar mientras bebiamos un FourLoko🌊",
+                    ].map((option, i) => (
+                      <Button
+                        key={i}
+                        variant="outline"
+                        className="w-full p-4 border-pink-200 hover:bg-pink-50 hover:border-pink-300 whitespace-normal break-words"
+                        onClick={() => handleAnswerSelect(option)}
+                      >
+                        {option}
+                      </Button>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="text-center space-y-6">
+                  {mission1IsCorrect ? (
+                    <>
+                      <div className="text-6xl animate-bounce">🎉</div>
+                      <div className="bg-green-50 border-2 border-green-200 p-6 rounded-2xl">
+                        <p className="text-2xl font-bold text-green-700 mb-4">
+                          ¡Exacto! 💕
+                        </p>
+                        <p className="text-lg text-green-600">
+                          Ese momento frente al mar fue mágico... 🌊✨
+                        </p>
+                        <p className="text-green-600 mt-2">
+                          Preparando la siguiente misión...
+                        </p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-6xl animate-bounce">🤔</div>
+                      <div className="bg-red-50 border-2 border-red-200 p-6 rounded-2xl">
+                        <p className="text-2xl font-bold text-red-700 mb-4">
+                          ¡¿Cómo puede ser?! 😱
+                        </p>
+                        <p className="text-lg text-red-600 mb-4">
+                          ¡Waooo! ¿En serio no recuerdas nuestro momento
+                          especial frente al mar? 🌊
+                        </p>
+                        <p className="text-red-600 mb-4">
+                          Te doy una pista: había alcohol de por medio... 🍻
+                        </p>
+                        <Button
+                          onClick={tryAgain}
+                          className="bg-pink-500 hover:bg-pink-600 text-white px-6 py-2 rounded-full"
+                        >
+                          Intentar de nuevo 💭
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -551,12 +807,49 @@ export default function LoveAdventure() {
 
   // Secret Message Mission
   if (currentMission === "secret") {
+    const handleCardFlip = (cardIndex: number) => {
+      const newFlippedCards = [...flippedCards];
+      newFlippedCards[cardIndex] = true;
+      setFlippedCards(newFlippedCards);
+
+      // Check if all cards are flipped
+      if (newFlippedCards.every((flipped) => flipped)) {
+        setTimeout(() => {
+          setMission2CanAdvance(true);
+          triggerConfetti();
+        }, 1000);
+      }
+    };
+
+    const cardData = [
+      {
+        src: "/memories/1.jpg",
+        alt: "Momento especial 1",
+        caption: "Cada sonrisa tuya ilumina mi día ✨",
+        title: "Primer Recuerdo",
+      },
+      {
+        src: "/memories/2.jpg",
+        alt: "Momento especial 2",
+        caption: "Momentos que atesoro en mi corazón 💝",
+        title: "Segundo Recuerdo",
+      },
+      {
+        src: "/memories/3.jpg",
+        alt: "Momento especial 3",
+        caption: "Contigo todo es más hermoso 🌸",
+        title: "Tercer Recuerdo",
+      },
+    ];
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-100 via-rose-50 to-pink-200 p-4">
         <div className="max-w-4xl mx-auto pt-8">
           <MissionHeader
             title="Misión 2: Nuestros Momentos Especiales"
             progress={progress}
+            isSocketConnected={isSocketConnected}
+            socketError={socketError}
           />
 
           <Card className="mt-8 border-pink-200 shadow-xl">
@@ -572,76 +865,75 @@ export default function LoveAdventure() {
                 <div className="text-4xl mb-4">📸💕</div>
                 <div className="bg-gradient-to-r from-pink-50 to-rose-50 p-6 rounded-2xl border-2 border-pink-200">
                   <p className="text-xl text-pink-700 font-medium leading-relaxed">
-                    Momentos que me han hecho conectar contigo y nunca quiero olvidar
+                    Momentos que me han hecho conectar contigo y nunca quiero
+                    olvidar
                   </p>
                   <p className="text-pink-600 mt-2 italic">
                     Hay más pero no suelo tirar fotos hehehe 😅
                   </p>
+                  <p className="text-pink-600 mt-2 font-medium">
+                    👆 Toca cada carta para revelar nuestros recuerdos
+                  </p>
                 </div>
               </div>
 
-              {/* Memories Gallery */}
+              {/* Flip Cards Gallery */}
               <div className="grid md:grid-cols-3 gap-6">
-                {[
-                  { src: "/memories/1.jpg", alt: "Momento especial 1" },
-                  { src: "/memories/2.jpg", alt: "Momento especial 2" },
-                  { src: "/memories/3.jpg", alt: "Momento especial 3" },
-                ].map((image, index) => (
+                {cardData.map((card, index) => (
                   <div
                     key={index}
-                    className="group relative overflow-hidden rounded-2xl shadow-lg transform hover:scale-105 transition-all duration-500 hover:shadow-2xl"
+                    className="relative h-80 cursor-pointer"
+                    onClick={() =>
+                      !flippedCards[index] && handleCardFlip(index)
+                    }
                   >
-                    <div className="aspect-square relative">
-                      <img
-                        src={image.src}
-                        alt={image.alt}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                        loading="lazy"
-                      />
-                      {/* Overlay with heart effect */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-pink-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                        <div className="absolute bottom-4 left-4 right-4 text-center">
-                          <div className="text-white text-2xl animate-pulse">💖</div>
-                          <p className="text-white text-sm font-medium">
-                            Recuerdo #{index + 1}
-                          </p>
+                    <div
+                      className={`relative w-full h-full transition-transform duration-700 preserve-3d ${
+                        flippedCards[index] ? "rotate-y-180" : ""
+                      }`}
+                      style={{
+                        transformStyle: "preserve-3d",
+                      }}
+                    >
+                      {/* Card Back (Hidden Memory) */}
+                      <div className="absolute inset-0 w-full h-full backface-hidden rounded-2xl bg-gradient-to-br from-pink-300 to-rose-300 flex items-center justify-center shadow-lg">
+                        <div className="text-center text-white">
+                          <div className="text-4xl mb-4">💖</div>
+                          <p className="text-xl font-bold">{card.title}</p>
+                          <p className="text-sm mt-2">Toca para revelar</p>
                         </div>
                       </div>
-                      
-                      {/* Floating hearts animation */}
-                      <div className="absolute inset-0 pointer-events-none">
-                        {Array.from({ length: 3 }).map((_, i) => (
-                          <div
-                            key={i}
-                            className="absolute text-pink-400 opacity-0 group-hover:opacity-100 animate-bounce"
-                            style={{
-                              left: `${20 + i * 30}%`,
-                              top: `${20 + i * 10}%`,
-                              animationDelay: `${i * 0.3}s`,
-                              animationDuration: "2s",
-                            }}
-                          >
-                            💕
+
+                      {/* Card Front (Revealed Memory) */}
+                      <div
+                        className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 rounded-2xl overflow-hidden shadow-lg"
+                        style={{
+                          transform: "rotateY(180deg)",
+                        }}
+                      >
+                        <div className="relative h-full">
+                          <Image
+                            src={card.src}
+                            alt={card.alt}
+                            className="w-full h-full object-cover"
+                            width={500}
+                            height={500}
+                            priority
+                            quality={100}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-pink-900/80 via-transparent to-transparent">
+                            <div className="absolute bottom-4 left-4 right-4 text-center">
+                              <div className="text-white text-2xl animate-pulse mb-2">
+                                💖
+                              </div>
+                              <p className="text-white text-sm font-medium">
+                                {card.caption}
+                              </p>
+                            </div>
                           </div>
-                        ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Memory Captions */}
-              <div className="grid md:grid-cols-3 gap-6 mt-6">
-                {[
-                  "Cada sonrisa tuya ilumina mi día ✨",
-                  "Momentos que atesoro en mi corazón 💝",
-                  "Contigo todo es más hermoso 🌸",
-                ].map((caption, index) => (
-                  <div
-                    key={index}
-                    className="text-center p-4 bg-white/50 backdrop-blur-sm rounded-xl border border-pink-200"
-                  >
-                    <p className="text-pink-700 font-medium">{caption}</p>
                   </div>
                 ))}
               </div>
@@ -650,9 +942,16 @@ export default function LoveAdventure() {
               <div className="text-center pt-6">
                 <Button
                   onClick={() => nextMission("quiz")}
-                  className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white px-8 py-3 text-lg rounded-full shadow-lg transform hover:scale-105 transition-all"
+                  disabled={!mission2CanAdvance}
+                  className={`px-8 py-3 text-lg rounded-full shadow-lg transform transition-all ${
+                    mission2CanAdvance
+                      ? "bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white hover:scale-105"
+                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  }`}
                 >
-                  Continuar con la aventura 💖
+                  {mission2CanAdvance
+                    ? "Continuar con la aventura 💖"
+                    : "Revela todos los recuerdos primero 🔒"}
                 </Button>
               </div>
             </CardContent>
@@ -660,140 +959,193 @@ export default function LoveAdventure() {
         </div>
 
         {showConfetti && <Confetti />}
+
+        {/* Custom CSS for 3D flip effect */}
+        <style jsx>{`
+          .preserve-3d {
+            transform-style: preserve-3d;
+          }
+          .backface-hidden {
+            backface-visibility: hidden;
+          }
+          .rotate-y-180 {
+            transform: rotateY(180deg);
+          }
+        `}</style>
       </div>
     );
   }
 
   // Quiz Mission
   if (currentMission === "quiz") {
+    const lovePromises = [
+      {
+        id: "adventures",
+        text: "Vivir aventuras juntos y crear recuerdos únicos",
+        emoji: "🌟",
+        description: "Explorar el mundo contigo",
+      },
+      {
+        id: "support",
+        text: "Apoyarte en cada sueño y meta que tengas",
+        emoji: "💪",
+        description: "Ser tu compañero incondicional",
+      },
+      {
+        id: "laughter",
+        text: "Hacerte reír todos los días, incluso en los difíciles",
+        emoji: "😊",
+        description: "Llenar tu vida de sonrisas",
+      },
+      {
+        id: "respect",
+        text: "Respetarte siempre y valorar tu individualidad",
+        emoji: "🤝",
+        description: "Honrar quien eres",
+      },
+      {
+        id: "growth",
+        text: "Crecer juntos y ser mejores personas cada día",
+        emoji: "🌱",
+        description: "Evolucionar como pareja",
+      },
+      {
+        id: "love",
+        text: "Amarte incondicionalmente en todas las circunstancias",
+        emoji: "💕",
+        description: "Amor puro y verdadero",
+      },
+    ];
+
+    const handlePromiseSelect = (promiseId: string) => {
+      if (selectedPromises.includes(promiseId)) {
+        setSelectedPromises(selectedPromises.filter((id) => id !== promiseId));
+      } else {
+        setSelectedPromises([...selectedPromises, promiseId]);
+      }
+    };
+
+    const handleContinue = () => {
+      if (selectedPromises.length >= 3) {
+        setShowPromiseResult(true);
+        triggerConfetti();
+        setTimeout(() => {
+          nextMission("map");
+        }, 4000);
+      }
+    };
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-100 via-rose-50 to-pink-200 p-4">
-        <div className="max-w-2xl mx-auto pt-8">
+        <div className="max-w-4xl mx-auto pt-8">
           <MissionHeader
-            title="Misión 3: Amor Nivel Experto"
+            title="Misión 3: Promesas del Corazón"
             progress={progress}
+            isSocketConnected={isSocketConnected}
+            socketError={socketError}
           />
 
           <Card className="mt-8 border-pink-200 shadow-xl">
             <CardHeader className="text-center bg-pink-50">
               <CardTitle className="text-2xl text-pink-800 flex items-center justify-center gap-2">
-                <Star className="text-pink-500" />
-                ¿Me Conoces Bien?
-                <Star className="text-pink-500" />
+                <Heart className="text-pink-500" />
+                Mis Promesas Para Ti
+                <Heart className="text-pink-500" />
               </CardTitle>
             </CardHeader>
             <CardContent className="p-8 space-y-8">
-              <div className="text-center">
-                <div className="text-4xl mb-4">🧠💕</div>
-                <p className="text-lg text-pink-700 mb-6">
-                  Demuestra qué tan bien me conoces respondiendo estas preguntas
-                </p>
-              </div>
-
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-pink-700 font-medium mb-2">
-                    ¿Cuál es mi color favorito? 🎨
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {["Azul 💙", "Rosa 💗", "Verde 💚", "Morado 💜"].map(
-                      (color) => (
-                        <Button
-                          key={color}
-                          variant={
-                            answers.quiz.color === color ? "default" : "outline"
-                          }
-                          onClick={() =>
-                            setAnswers({
-                              ...answers,
-                              quiz: { ...answers.quiz, color },
-                            })
-                          }
-                          className={
-                            answers.quiz.color === color
-                              ? "bg-pink-500 text-white"
-                              : "border-pink-200 hover:bg-pink-50"
-                          }
-                        >
-                          {color}
-                        </Button>
-                      )
-                    )}
+              {!showPromiseResult ? (
+                <>
+                  <div className="text-center space-y-4">
+                    <div className="text-4xl mb-4">💝</div>
+                    <div className="bg-gradient-to-r from-pink-50 to-rose-50 p-6 rounded-2xl border-2 border-pink-200">
+                      <p className="text-xl text-pink-700 font-medium leading-relaxed mb-2">
+                        Estas son las promesas que quiero hacerte...
+                      </p>
+                      <p className="text-pink-600">
+                        Selecciona las que más significado tengan para ti ✨
+                      </p>
+                      <p className="text-sm text-pink-500 mt-2">
+                        (Elige al menos 3 promesas)
+                      </p>
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-pink-700 font-medium mb-2">
-                    ¿Mi comida favorita? 🍕
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {["Pizza 🍕", "Sushi 🍣", "Tacos 🌮", "Pasta 🍝"].map(
-                      (food) => (
-                        <Button
-                          key={food}
-                          variant={
-                            answers.quiz.food === food ? "default" : "outline"
-                          }
-                          onClick={() =>
-                            setAnswers({
-                              ...answers,
-                              quiz: { ...answers.quiz, food },
-                            })
-                          }
-                          className={
-                            answers.quiz.food === food
-                              ? "bg-pink-500 text-white"
-                              : "border-pink-200 hover:bg-pink-50"
-                          }
-                        >
-                          {food}
-                        </Button>
-                      )
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-pink-700 font-medium mb-2">
-                    ¿Mi emoji más usado? 😊
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {["😂", "❤️", "😊", "🤔"].map((emoji) => (
-                      <Button
-                        key={emoji}
-                        variant={
-                          answers.quiz.emoji === emoji ? "default" : "outline"
-                        }
-                        onClick={() =>
-                          setAnswers({
-                            ...answers,
-                            quiz: { ...answers.quiz, emoji },
-                          })
-                        }
-                        className={
-                          answers.quiz.emoji === emoji
-                            ? "bg-pink-500 text-white text-2xl"
-                            : "border-pink-200 hover:bg-pink-50 text-2xl"
-                        }
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {lovePromises.map((promise) => (
+                      <div
+                        key={promise.id}
+                        onClick={() => handlePromiseSelect(promise.id)}
+                        className={`p-6 rounded-2xl border-2 cursor-pointer transition-all duration-300 transform hover:scale-105 ${
+                          selectedPromises.includes(promise.id)
+                            ? "bg-gradient-to-r from-pink-200 to-rose-200 border-pink-400 shadow-lg"
+                            : "bg-white border-pink-200 hover:border-pink-300 hover:shadow-md"
+                        }`}
                       >
-                        {emoji}
-                      </Button>
+                        <div className="text-center space-y-3">
+                          <div
+                            className={`text-3xl transition-all duration-300 ${
+                              selectedPromises.includes(promise.id)
+                                ? "animate-bounce"
+                                : ""
+                            }`}
+                          >
+                            {promise.emoji}
+                          </div>
+                          <h3 className="font-bold text-pink-800 text-lg">
+                            {promise.description}
+                          </h3>
+                          <p className="text-pink-600 text-sm leading-relaxed">
+                            {promise.text}
+                          </p>
+                          {selectedPromises.includes(promise.id) && (
+                            <div className="text-pink-500 text-sm font-medium">
+                              ✓ Seleccionada
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     ))}
                   </div>
-                </div>
 
-                <Button
-                  onClick={() => nextMission("map")}
-                  disabled={
-                    !answers.quiz.color ||
-                    !answers.quiz.food ||
-                    !answers.quiz.emoji
-                  }
-                  className="w-full bg-pink-500 hover:bg-pink-600 text-white py-3"
-                >
-                  ¡Continuar la aventura! 🚀
-                </Button>
-              </div>
+                  <div className="text-center">
+                    <div className="mb-4">
+                      <span className="text-pink-600">
+                        Promesas seleccionadas: {selectedPromises.length}/3
+                        mínimo
+                      </span>
+                    </div>
+                    <Button
+                      onClick={handleContinue}
+                      disabled={selectedPromises.length < 3}
+                      className={`px-8 py-3 text-lg rounded-full shadow-lg transform transition-all ${
+                        selectedPromises.length >= 3
+                          ? "bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white hover:scale-105"
+                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      }`}
+                    >
+                      {selectedPromises.length >= 3
+                        ? "Continuar la aventura 💖"
+                        : "Selecciona al menos 3 promesas"}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center space-y-6">
+                  <div className="text-6xl animate-pulse">💕</div>
+                  <div className="bg-gradient-to-r from-pink-50 to-rose-50 p-8 rounded-2xl border-2 border-pink-200">
+                    <p className="text-2xl font-bold text-pink-800 mb-4">
+                      ¡Gracias por elegir nuestras promesas! 💝
+                    </p>
+                    <p className="text-lg text-pink-700 mb-4">
+                      Estas promesas vivirán en mi corazón para siempre...
+                    </p>
+                    <div className="text-pink-600">
+                      <p>Preparando el destino final... 🗺️✨</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -805,15 +1157,17 @@ export default function LoveAdventure() {
 
   // Map Mission
   if (currentMission === "map") {
-    const isAtLocation = distanceToTarget !== null && distanceToTarget <= 100;
-    const isClose = distanceToTarget !== null && distanceToTarget <= 500;
+    const isAtLocation = distanceToTarget !== null && distanceToTarget <= 50;
+    const isClose = distanceToTarget !== null && distanceToTarget <= 200;
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-100 via-rose-50 to-pink-200 p-4">
         <div className="max-w-6xl mx-auto pt-8">
           <MissionHeader
-            title="Misión 1: El Destino de conexión"
+            title="Misión 4: El Destino del Corazón"
             progress={progress}
+            isSocketConnected={isSocketConnected}
+            socketError={socketError}
           />
 
           <div className="grid lg:grid-cols-2 gap-6 mt-8">
@@ -848,8 +1202,21 @@ export default function LoveAdventure() {
                   </div>
                 </div>
 
+                {/* Found Message */}
+                {mission4ShowFound && (
+                  <div className="bg-green-50 border-2 border-green-200 p-6 rounded-2xl text-center">
+                    <div className="text-4xl mb-4">🎉</div>
+                    <p className="text-2xl font-bold text-green-700 mb-2">
+                      ¡Me has encontrado! 💕
+                    </p>
+                    <p className="text-green-600">
+                      Sabía que llegarías hasta aquí... ✨
+                    </p>
+                  </div>
+                )}
+
                 {/* Location Status */}
-                {distanceToTarget !== null && (
+                {distanceToTarget !== null && !mission4ShowFound && (
                   <div
                     className={`p-4 rounded-lg text-center ${
                       isAtLocation
@@ -861,12 +1228,12 @@ export default function LoveAdventure() {
                   >
                     {isAtLocation ? (
                       <div className="space-y-2">
-                        <div className="text-2xl">🎉</div>
+                        <div className="text-2xl">🎯</div>
                         <p className="text-green-700 font-medium">
-                          ¡Perfecto! Estás en el lugar correcto
+                          ¡Perfecto! Estás muy cerca
                         </p>
                         <p className="text-green-600">
-                          Preparando la misión final... ✨
+                          ¡Búscame! Estoy aquí... 👀
                         </p>
                       </div>
                     ) : isClose ? (
@@ -903,26 +1270,46 @@ export default function LoveAdventure() {
 
                 {/* Action Buttons */}
                 <div className="space-y-3">
-                  <Button
-                    onClick={checkLocation}
-                    disabled={isCheckingLocation || isAtLocation}
-                    className={`w-full py-3 text-lg ${
-                      isAtLocation
-                        ? "bg-green-500 hover:bg-green-600"
-                        : "bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600"
-                    } text-white`}
-                  >
-                    {isCheckingLocation ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                        Verificando ubicación...
-                      </span>
-                    ) : isAtLocation ? (
-                      "¡Acceso concedido! 🎉"
-                    ) : (
-                      "📍 Verificar mi ubicación"
-                    )}
-                  </Button>
+                  {mission4ShowFound ? (
+                    <div className="space-y-3">
+                      <Button
+                        onClick={() => nextMission("final")}
+                        disabled={!isSocketConnected}
+                        className={`w-full py-3 text-lg rounded-full shadow-lg transform transition-all ${
+                          isSocketConnected
+                            ? "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white hover:scale-105"
+                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        }`}
+                      >
+                        ¡Continuar al momento final! 💖
+                      </Button>
+
+                      {!isSocketConnected && (
+                        <div className="text-center text-red-600 text-sm">
+                          <p>⚠️ Necesitas conexión al monitor para continuar</p>
+                          <p>
+                            La misión final requiere supervisión del
+                            administrador
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={checkLocation}
+                      disabled={isCheckingLocation}
+                      className="w-full py-3 text-lg bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white"
+                    >
+                      {isCheckingLocation ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                          Verificando ubicación...
+                        </span>
+                      ) : (
+                        "📍 Verificar mi ubicación"
+                      )}
+                    </Button>
+                  )}
 
                   <div className="grid grid-cols-2 gap-2">
                     <Button
@@ -947,7 +1334,7 @@ export default function LoveAdventure() {
                 <div className="text-center text-sm text-pink-600 space-y-1">
                   <p>Debes estar físicamente en el lugar para continuar 🥰</p>
                   <p className="text-xs">
-                    Necesitas estar dentro de 100 metros del lugar especial
+                    Necesitas estar dentro de 50 metros del lugar especial
                   </p>
                 </div>
               </CardContent>
@@ -1021,24 +1408,147 @@ export default function LoveAdventure() {
               <div className="space-y-6">
                 <div className="text-8xl animate-pulse">💖</div>
 
-                {/* Progressive Messages */}
-                <div className="space-y-4">
+                {/* Interactive Messages */}
+                <div
+                  className="space-y-4 cursor-pointer"
+                  onClick={handleScreenTap}
+                >
                   {finalMessages
-                    .slice(0, finalMessageIndex + 1)
+                    .slice(0, currentMessageIndex + 1)
                     .map((message, index) => (
                       <div
                         key={index}
                         className={`text-2xl font-bold text-pink-800 transition-all duration-1000 ${
-                          index === finalMessageIndex ? "animate-pulse" : ""
+                          index === currentMessageIndex ? "animate-pulse" : ""
                         }`}
                       >
                         {message}
                       </div>
                     ))}
+
+                  {/* Tap instruction */}
+                  {currentMessageIndex < finalMessages.length - 1 &&
+                    !showFinalQuestion && (
+                      <div className="text-sm text-pink-600 mt-4 animate-bounce">
+                        👆 Toca la pantalla para continuar
+                      </div>
+                    )}
                 </div>
 
+                {/* Socket Error Display */}
+                {socketError && (
+                  <div className="bg-red-50 border-2 border-red-200 p-4 rounded-2xl text-center">
+                    <div className="text-2xl mb-2">⚠️</div>
+                    <p className="text-red-700 font-medium">{socketError}</p>
+                    <p className="text-red-600 text-sm mt-2">
+                      Contacta al administrador para resolver este problema.
+                    </p>
+                  </div>
+                )}
+
+                {/* Found Question */}
+                {showFinalQuestion && currentMessageIndex === 3 && (
+                  <div className="bg-white/50 backdrop-blur-sm p-6 rounded-2xl border-2 border-pink-300 shadow-xl space-y-6">
+                    {!waitingForAdmin ? (
+                      <>
+                        <div className="flex justify-center space-x-2">
+                          {["💕", "🌸", "✨", "🦋", "💫", "🌟", "💖"].map(
+                            (emoji, i) => (
+                              <span
+                                key={i}
+                                className="text-2xl animate-bounce"
+                                style={{ animationDelay: `${i * 0.1}s` }}
+                              >
+                                {emoji}
+                              </span>
+                            )
+                          )}
+                        </div>
+
+                        <div className="space-y-4">
+                          <p className="text-xl font-bold text-pink-800">
+                            ¿Me encontraste?
+                          </p>
+
+                          {/* Connection Status */}
+                          <div className="text-sm text-center">
+                            <span
+                              className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+                                isSocketConnected
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-red-100 text-red-700"
+                              }`}
+                            >
+                              <div
+                                className={`w-2 h-2 rounded-full ${
+                                  isSocketConnected
+                                    ? "bg-green-500"
+                                    : "bg-red-500"
+                                }`}
+                              ></div>
+                              {isSocketConnected
+                                ? "Conectado al monitor"
+                                : "Sin conexión al monitor"}
+                            </span>
+                          </div>
+
+                          <div className="flex gap-4 justify-center">
+                            <Button
+                              onClick={() => handleFoundResponse(true)}
+                              className="bg-green-500 hover:bg-green-600 text-white px-8 py-3 text-lg rounded-full shadow-lg transform hover:scale-105 transition-all"
+                            >
+                              ¡Sí! 💖
+                            </Button>
+
+                            <Button
+                              onClick={() => handleFoundResponse(false)}
+                              disabled={!isSocketConnected}
+                              className={`px-8 py-3 text-lg rounded-full shadow-lg transform transition-all ${
+                                isSocketConnected
+                                  ? "bg-orange-500 hover:bg-orange-600 text-white hover:scale-105"
+                                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                              }`}
+                            >
+                              No todavía 🔍
+                            </Button>
+                          </div>
+
+                          {!isSocketConnected && (
+                            <div className="text-center text-red-600 text-sm">
+                              <p>⚠️ Sin conexión al servidor de monitoreo</p>
+                              <p>
+                                No se puede esperar aprobación del administrador
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-center space-y-4">
+                        <div className="text-4xl animate-pulse">⏳</div>
+                        <p className="text-xl font-bold text-pink-800">
+                          Esperando confirmación...
+                        </p>
+                        <p className="text-pink-600">
+                          Sigue buscando, cuando me encuentres podrás continuar
+                          💕
+                        </p>
+                        <div className="flex justify-center space-x-1">
+                          {Array.from({ length: 3 }).map((_, i) => (
+                            <div
+                              key={i}
+                              className="w-2 h-2 bg-pink-500 rounded-full animate-bounce"
+                              style={{ animationDelay: `${i * 0.2}s` }}
+                            ></div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Final Question with Buttons */}
-                {showFinalQuestion && (
+                {currentMessageIndex === finalMessages.length - 1 && (
                   <div className="bg-white/50 backdrop-blur-sm p-6 rounded-2xl border-2 border-pink-300 shadow-xl space-y-6">
                     <div className="flex justify-center space-x-2">
                       {["💕", "🌸", "✨", "🦋", "💫", "🌟", "💖"].map(
@@ -1088,40 +1598,47 @@ export default function LoveAdventure() {
           ) : (
             /* Final Response */
             <div className="space-y-6">
-              <div className="text-8xl animate-pulse">
-                {finalAnswer === "accepted" ? "💖" : "💔"}
-              </div>
+              <div className="text-8xl animate-pulse">💖</div>
 
               <div className="bg-white/50 backdrop-blur-sm p-6 rounded-2xl border-2 border-pink-300 shadow-xl">
-                {finalAnswer === "accepted" ? (
-                  <div className="space-y-4">
-                    <p className="text-3xl font-bold text-green-700 mb-4">
-                      ¡Gracias por decir que sí! 💖
-                    </p>
-                    <p className="text-xl text-pink-700">
-                      Gracias por brindarme la oportunidad de pasar más tiempo a
-                      tu lado. Te prometo hacer cada día especial y lleno de
-                      amor. ¡Te quiero mucho! 💕
-                    </p>
-                    <div className="text-4xl animate-bounce">💋</div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <p className="text-3xl font-bold text-red-700 mb-4">
-                      Entiendo tu decisión 💔
-                    </p>
-                    <p className="text-xl text-pink-700">
-                      Igualmente fue un placer haber compartido contigo todo
-                      este tiempo. Gracias por todos los momentos hermosos que
-                      hemos vivido juntos. Te deseo lo mejor en tu vida. 🌸
-                    </p>
-                    <div className="text-4xl">🤗</div>
-                  </div>
-                )}
+                <div className="space-y-4">
+                  <p className="text-3xl font-bold text-green-700 mb-4">
+                    ¡Gracias por decir que sí! 💖
+                  </p>
+                  <p className="text-xl text-pink-700">
+                    Gracias por brindarme la oportunidad de pasar más tiempo a
+                    tu lado. Te prometo dar lo mejor de mi! ¡Te quiero mucho! 💕
+                  </p>
+                  <div className="text-4xl animate-bounce">💋</div>
+                </div>
               </div>
             </div>
           )}
         </div>
+
+        {/* Modal for "No" button */}
+        {showNoModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white p-8 rounded-2xl max-w-md mx-4 shadow-2xl">
+              <div className="text-center space-y-4">
+                <div className="text-4xl">😅</div>
+                <p className="text-xl font-bold text-pink-800">
+                  ¡Esa opción no es válida!
+                </p>
+                <p className="text-pink-600">
+                  Jajaja, inténtalo de nuevo... Solo hay una respuesta correcta
+                  💕
+                </p>
+                <Button
+                  onClick={closeNoModal}
+                  className="bg-pink-500 hover:bg-pink-600 text-white px-6 py-2 rounded-full"
+                >
+                  Intentar de nuevo 💖
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <FloatingHearts />
         {showConfetti && <Confetti />}
@@ -1135,9 +1652,13 @@ export default function LoveAdventure() {
 function MissionHeader({
   title,
   progress,
+  isSocketConnected,
+  socketError,
 }: {
   title: string;
   progress: number;
+  isSocketConnected?: boolean;
+  socketError?: string | null;
 }) {
   return (
     <div className="text-center space-y-4">
@@ -1149,6 +1670,33 @@ function MissionHeader({
         />
         <p className="text-pink-600 mt-2">{progress}% completado</p>
       </div>
+
+      {/* WebSocket Connection Status */}
+      {typeof isSocketConnected !== "undefined" && (
+        <div className="flex justify-center">
+          <span
+            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+              isSocketConnected
+                ? "bg-green-100 text-green-700"
+                : "bg-red-100 text-red-700"
+            }`}
+          >
+            <div
+              className={`w-2 h-2 rounded-full ${
+                isSocketConnected ? "bg-green-500" : "bg-red-500"
+              }`}
+            ></div>
+            {/* {isSocketConnected ? "Monitor conectado" : "Monitor desconectado"} */}
+          </span>
+        </div>
+      )}
+
+      {/* Socket Error */}
+      {socketError && (
+        <div className="bg-red-50 border border-red-200 p-2 rounded-lg text-center max-w-md mx-auto">
+          <p className="text-red-700 text-sm">{socketError}</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -1175,9 +1723,21 @@ function Confetti() {
 }
 
 function FloatingHearts() {
+  // No mostrar los corazones en la pantalla de final
+  const missionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (missionRef.current) {
+      missionRef.current.style.zIndex = "0";
+    }
+  }, []);
+
   return (
-    <div className="fixed inset-0 pointer-events-none z-40">
-      {Array.from({ length: 20 }).map((_, i) => (
+    <div
+      className="fixed inset-0 pointer-events-none"
+      ref={missionRef}
+    >
+      {Array.from({ length: 10 }).map((_, i) => (
         <div
           key={i}
           className="absolute animate-bounce"
@@ -1188,7 +1748,7 @@ function FloatingHearts() {
             animationDuration: `${2 + Math.random() * 2}s`,
           }}
         >
-          💖
+          <Heart className="text-pink-500 w-10 h-10 animate-pulse" />
         </div>
       ))}
     </div>

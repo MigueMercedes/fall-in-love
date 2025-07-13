@@ -586,36 +586,38 @@ export default function LoveAdventure() {
     }
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        // Using real GPS coordinates
-        const userLat = position.coords.latitude;
-        const userLng = position.coords.longitude;
+      () =>
+        // position
+        {
+          // Using real GPS coordinates
+          // const userLat = position.coords.latitude;
+          // const userLng = position.coords.longitude;
 
-        // 🔧 TESTING MODE - Uncomment these lines to simulate being close to target
-        // const userLat = targetLocation.lat + 0.0003; // ~33 meters north
-        // const userLng = targetLocation.lng + 0.0002; // ~15 meters east
+          // 🔧 TESTING MODE - Uncomment these lines to simulate being close to target
+          const userLat = targetLocation.lat + 0.0003; // ~33 meters north
+          const userLng = targetLocation.lng + 0.0002; // ~15 meters east
 
-        setUserLocation({ lat: userLat, lng: userLng });
+          setUserLocation({ lat: userLat, lng: userLng });
 
-        const distance = calculateDistance(
-          userLat,
-          userLng,
-          targetLocation.lat,
-          targetLocation.lng
-        );
+          const distance = calculateDistance(
+            userLat,
+            userLng,
+            targetLocation.lat,
+            targetLocation.lng
+          );
 
-        setDistanceToTarget(Math.round(distance));
-        setIsCheckingLocation(false);
+          setDistanceToTarget(Math.round(distance));
+          setIsCheckingLocation(false);
 
-        // Send location update
-        sendLocationUpdate(userLat, userLng, Math.round(distance));
+          // Send location update
+          sendLocationUpdate(userLat, userLng, Math.round(distance));
 
-        // Allow access if within 50 meters of target location
-        if (distance <= 50) {
-          setMission4ShowFound(true);
-          triggerConfetti();
-        }
-      },
+          // Allow access if within 50 meters of target location
+          if (distance <= 50) {
+            setMission4ShowFound(true);
+            triggerConfetti();
+          }
+        },
       (error) => {
         setIsCheckingLocation(false);
         switch (error.code) {

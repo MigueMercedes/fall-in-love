@@ -593,9 +593,9 @@ export default function LoveAdventure() {
           // const userLat = position.coords.latitude;
           // const userLng = position.coords.longitude;
 
-          // 🔧 TESTING MODE - Uncomment these lines to simulate being close to target
-          const userLat = targetLocation.lat + 0.0003; // ~33 meters north
-          const userLng = targetLocation.lng + 0.0002; // ~15 meters east
+          // 🔧 TESTING MODE - Simulating user at the meeting point
+          const userLat = targetLocation.lat; // Exactly at meeting point
+          const userLng = targetLocation.lng; // Exactly at meeting point
 
           setUserLocation({ lat: userLat, lng: userLng });
 
